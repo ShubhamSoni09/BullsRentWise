@@ -129,28 +129,40 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
   const avgBudget = roommates.length > 0 ? totalBudget / roommates.length : 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-bold text-gray-900">👥 Roommates</h3>
-        <span className="text-xs text-gray-600">
+    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 lg:p-6 hover-lift">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg lg:text-xl font-bold text-gray-900">Roommates</h3>
+        </div>
+        <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
           {roommates.length} {roommates.length !== 1 ? 'people' : 'person'}
         </span>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Share Code Section */}
-        <div className="bg-blue-50 rounded-lg p-3">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-semibold text-gray-900 text-sm">Share Code</h4>
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              Share Code
+            </h4>
             <button
               onClick={handleShare}
-              className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
             >
               Share
             </button>
           </div>
-          <div className="flex items-center gap-1.5">
-            <code className="flex-1 px-2 py-1.5 bg-white border border-blue-200 rounded text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <code className="flex-1 px-3 py-2.5 bg-white border-2 border-blue-200 rounded-xl text-sm font-mono font-semibold text-gray-900">
               {shareCode}
             </code>
             <button
@@ -158,27 +170,35 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
                 navigator.clipboard.writeText(shareCode);
                 toast.success('Code copied!');
               }}
-              className="px-2 py-1.5 bg-white border border-blue-200 rounded text-xs hover:bg-blue-50"
+              className="px-3 py-2.5 bg-white border-2 border-blue-200 rounded-xl text-sm hover:bg-blue-50 transition-all hover:border-blue-300"
+              title="Copy code"
             >
-              📋
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
             </button>
           </div>
         </div>
 
         {/* Join with Code */}
-        <div className="bg-gray-50 rounded-lg p-3">
-          <h4 className="font-semibold text-gray-900 text-sm mb-2">Join Group</h4>
-          <div className="flex gap-1.5">
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border-2 border-gray-200">
+          <h4 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+            Join Group
+          </h4>
+          <div className="flex gap-2">
             <input
               type="text"
               value={joiningCode}
               onChange={(e) => setJoiningCode(e.target.value.toUpperCase())}
               placeholder="Enter code"
-              className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-green-200 focus:border-green-500 transition-all bg-white outline-none"
             />
             <button
               onClick={handleJoinWithCode}
-              className="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+              className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg"
             >
               Join
             </button>
@@ -187,12 +207,17 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
 
         {/* Roommates List */}
         {roommates.length > 0 && (
-          <div className="space-y-2 max-h-48 overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
-            <h4 className="font-semibold text-gray-900 text-sm">Connected ({roommates.length})</h4>
+          <div className="space-y-3 max-h-48 overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
+            <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+              <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Connected ({roommates.length})
+            </h4>
             {roommates.map((roommate) => (
               <div
                 key={roommate.id}
-                className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md hover-lift transition-all"
               >
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-900 text-sm truncate">{roommate.name}</div>
@@ -205,9 +230,12 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
                 </div>
                 <button
                   onClick={() => handleRemoveRoommate(roommate.id)}
-                  className="ml-2 text-red-600 hover:text-red-800 text-sm shrink-0"
+                  className="ml-3 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                  title="Remove roommate"
                 >
-                  ×
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
                 </button>
               </div>
             ))}
@@ -228,21 +256,26 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
 
         {/* Add Roommate Form */}
         {showAddForm ? (
-          <div className="border border-gray-200 rounded-lg p-3 space-y-2">
-            <h4 className="font-semibold text-gray-900 text-sm">Add Roommate</h4>
+          <div className="border-2 border-gray-200 rounded-xl p-4 space-y-3 bg-gradient-to-br from-gray-50 to-white">
+            <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add Roommate
+            </h4>
             <input
               type="text"
               value={newRoommate.name}
               onChange={(e) => setNewRoommate({ ...newRoommate, name: e.target.value })}
               placeholder="Name"
-              className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
             />
             <input
               type="email"
               value={newRoommate.email}
               onChange={(e) => setNewRoommate({ ...newRoommate, email: e.target.value })}
               placeholder="Email"
-              className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
             />
             <div className="grid grid-cols-2 gap-2">
               <input
@@ -250,20 +283,20 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
                 value={newRoommate.phone}
                 onChange={(e) => setNewRoommate({ ...newRoommate, phone: e.target.value })}
                 placeholder="Phone"
-                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
               />
               <input
                 type="number"
                 value={newRoommate.budget || ''}
                 onChange={(e) => setNewRoommate({ ...newRoommate, budget: parseFloat(e.target.value) || 0 })}
                 placeholder="Budget $"
-                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
               />
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex gap-2">
               <button
                 onClick={handleAddRoommate}
-                className="flex-1 px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
               >
                 Add
               </button>
@@ -272,7 +305,7 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
                   setShowAddForm(false);
                   setNewRoommate({ name: '', email: '', phone: '', budget: 0, preferences: '' });
                 }}
-                className="flex-1 px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
+                className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-300 transition-all"
               >
                 Cancel
               </button>
@@ -281,9 +314,12 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
         ) : (
           <button
             onClick={() => setShowAddForm(true)}
-            className="w-full px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 font-medium transition-colors"
+            className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
           >
-            + Add Roommate
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Roommate
           </button>
         )}
       </div>

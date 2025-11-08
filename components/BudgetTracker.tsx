@@ -52,50 +52,62 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
   const affordabilityPercentage = monthlyBudget > 0 ? (perPersonCost / monthlyBudget) * 100 : 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-bold text-gray-900">💰 Budget</h3>
+    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 lg:p-6 hover-lift">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg lg:text-xl font-bold text-gray-900">Budget</h3>
+        </div>
         {saved && (
-          <span className="text-xs text-green-600 font-medium">✓ Saved</span>
+          <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Saved
+          </span>
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
               Budget (per person)
             </label>
-            <div className="flex items-center gap-1">
-              <span className="text-gray-500 text-sm">$</span>
+            <div className="flex items-center gap-1.5 px-3 py-2.5 border border-gray-300 rounded-xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all bg-white shadow-sm">
+              <span className="text-gray-500 text-sm font-medium">$</span>
               <input
                 type="number"
                 value={monthlyBudget || ''}
                 onChange={(e) => setMonthlyBudget(parseFloat(e.target.value) || 0)}
                 placeholder="500"
-                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 text-sm font-medium text-gray-900 outline-none bg-transparent"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
               Monthly Rent
             </label>
-            <div className="flex items-center gap-1">
-              <span className="text-gray-500 text-sm">$</span>
+            <div className="flex items-center gap-1.5 px-3 py-2.5 border border-gray-300 rounded-xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all bg-white shadow-sm">
+              <span className="text-gray-500 text-sm font-medium">$</span>
               <input
                 type="number"
                 value={estimatedRent || ''}
                 onChange={(e) => setEstimatedRent(parseFloat(e.target.value) || 0)}
                 placeholder="1200"
-                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 text-sm font-medium text-gray-900 outline-none bg-transparent"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
               Roommates
             </label>
             <input
@@ -105,22 +117,22 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
               value={roommateCount || ''}
               onChange={(e) => setRoommateCount(parseInt(e.target.value) || 0)}
               placeholder="0"
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 text-sm font-medium text-gray-900 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none shadow-sm"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
               Utilities
             </label>
-            <div className="flex items-center gap-1">
-              <span className="text-gray-500 text-sm">$</span>
+            <div className="flex items-center gap-1.5 px-3 py-2.5 border border-gray-300 rounded-xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all bg-white shadow-sm">
+              <span className="text-gray-500 text-sm font-medium">$</span>
               <input
                 type="number"
                 value={utilities || ''}
                 onChange={(e) => setUtilities(parseFloat(e.target.value) || 0)}
                 placeholder="100"
-                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 text-sm font-medium text-gray-900 outline-none bg-transparent"
               />
             </div>
           </div>
@@ -128,15 +140,23 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
 
         <button
           onClick={handleSave}
-          className="w-full px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 font-medium transition-colors"
+          className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
         >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
           Save Budget
         </button>
 
         {estimatedRent > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <h4 className="font-semibold text-gray-900 text-sm mb-2">Cost Breakdown</h4>
+          <div className="mt-4 pt-4 border-t border-gray-300 space-y-3">
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-300">
+              <h4 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Cost Breakdown
+              </h4>
               <div className="space-y-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Rent:</span>
@@ -146,12 +166,12 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
                   <span className="text-gray-600">Utilities:</span>
                   <span className="font-semibold">${utilities.toFixed(0)}</span>
                 </div>
-                <div className="flex justify-between pt-1.5 border-t border-gray-300">
+                <div className="flex justify-between pt-1.5 border-t border-gray-400">
                   <span className="text-gray-900 font-semibold">Total:</span>
                   <span className="font-bold">${totalMonthlyCost.toFixed(0)}</span>
                 </div>
                 {roommateCount > 0 && (
-                  <div className="flex justify-between pt-1.5 border-t border-gray-300">
+                  <div className="flex justify-between pt-1.5 border-t border-gray-400">
                     <span className="text-gray-900 font-semibold">Per Person:</span>
                     <span className="font-bold text-blue-600">
                       ${perPersonCost.toFixed(0)}
@@ -162,15 +182,20 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
             </div>
 
             {monthlyBudget > 0 && (
-              <div className={`rounded-lg p-3 ${
-                isAffordable ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+              <div className={`rounded-xl p-4 border-2 ${
+                isAffordable ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-300'
               }`}>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-gray-900 text-sm">Affordability</h4>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                    <svg className={`w-4 h-4 ${isAffordable ? 'text-green-600' : 'text-red-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Affordability
+                  </h4>
+                  <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
                     isAffordable ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
                   }`}>
-                    {isAffordable ? '✓ OK' : '⚠️ Over'}
+                    {isAffordable ? '✓ Affordable' : '⚠️ Over Budget'}
                   </span>
                 </div>
                 <div className="space-y-1.5 text-xs">

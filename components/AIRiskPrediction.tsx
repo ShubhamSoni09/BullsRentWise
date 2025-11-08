@@ -18,6 +18,7 @@ export default function AIRiskPrediction({
   const [predictions, setPredictions] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [animatedScore, setAnimatedScore] = useState(0);
+  const [showInfo, setShowInfo] = useState(false);
 
   const animateScore = (targetScore: number) => {
     const duration = 1500; // 1.5 seconds
@@ -112,8 +113,6 @@ export default function AIRiskPrediction({
   const radius = 55; // Updated radius for larger circle
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (animatedScore / 100) * circumference;
-
-  const [showInfo, setShowInfo] = useState(false);
 
   return (
     <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-xl border border-purple-100 p-6">
