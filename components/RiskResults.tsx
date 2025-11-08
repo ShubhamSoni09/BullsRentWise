@@ -4,14 +4,36 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import RiskBreakdown from '@/components/RiskBreakdown';
-import AIRiskPrediction from '@/components/AIRiskPrediction';
-import AIComplaintAnalysis from '@/components/AIComplaintAnalysis';
-import AIChatbot from '@/components/AIChatbot';
-import BudgetTracker from '@/components/BudgetTracker';
-import RoommateConnector from '@/components/RoommateConnector';
 import CollapsibleSection from '@/components/CollapsibleSection';
+import LazyLoad from '@/components/LazyLoad';
 
+// Lazy load heavy components
 const Map = dynamic(() => import('@/components/Map'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full w-full bg-gray-100 rounded-xl flex items-center justify-center">
+      <div className="text-gray-400">Loading map...</div>
+    </div>
+  ),
+});
+
+const AIRiskPrediction = dynamic(() => import('@/components/AIRiskPrediction'), {
+  ssr: false,
+});
+
+const AIComplaintAnalysis = dynamic(() => import('@/components/AIComplaintAnalysis'), {
+  ssr: false,
+});
+
+const AIChatbot = dynamic(() => import('@/components/AIChatbot'), {
+  ssr: false,
+});
+
+const BudgetTracker = dynamic(() => import('@/components/BudgetTracker'), {
+  ssr: false,
+});
+
+const RoommateConnector = dynamic(() => import('@/components/RoommateConnector'), {
   ssr: false,
 });
 
@@ -66,6 +88,8 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
       id: Date.now().toString(),
       address,
       riskScore,
+      lat,
+      lng,
       date: new Date().toISOString(),
     };
 
@@ -91,7 +115,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-6 lg:p-8 space-y-6">
+    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-6 lg:p-8 space-y-6 hover-lift animate-scaleIn">
       {/* Header - Enhanced */}
       <div className="flex justify-between items-start gap-4 pb-4 border-b border-gray-200">
         <div className="flex-1 min-w-0">
@@ -191,12 +215,12 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
           <>
             <RiskBreakdown complaints={complaints} weather={weather} crime={crime} riskScore={riskScore} />
             
-            <div className="h-64 lg:h-80 rounded-lg overflow-hidden border border-gray-200">
+            <div className="h-64 lg:h-80 rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <Map lat={lat} lng={lng} address={address} complaints={complaints} crimes={crime?.crimes || []} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100 shadow-sm hover:shadow-md transition-shadow">
+              <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100 shadow-sm hover:shadow-lg hover-lift transition-all duration-300">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-red-500 rounded-lg">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +248,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
                 </ul>
               </div>
 
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-md transition-shadow">
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-lg hover-lift transition-all duration-300">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-blue-500 rounded-lg">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,7 +275,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-md transition-shadow">
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-lg hover-lift transition-all duration-300">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-purple-500 rounded-lg">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -281,43 +305,53 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
 
         {activeTab === 'ai' && (
           <div className="space-y-4">
-            <AIRiskPrediction
-              currentRiskScore={riskScore}
-              complaints={complaints}
-              crimeStats={crime?.stats}
-              weather={weather}
-            />
+            <LazyLoad fallback={<div className="h-32 bg-gray-100 rounded-xl animate-pulse" />}>
+              <AIRiskPrediction
+                currentRiskScore={riskScore}
+                complaints={complaints}
+                crimeStats={crime?.stats}
+                weather={weather}
+              />
+            </LazyLoad>
             
             {complaints.length > 0 && (
               <CollapsibleSection title="AI Complaint Analysis" icon="🤖" defaultOpen={false}>
-                <AIComplaintAnalysis complaints={complaints} />
+                <LazyLoad fallback={<div className="h-24 bg-gray-100 rounded-lg animate-pulse" />}>
+                  <AIComplaintAnalysis complaints={complaints} />
+                </LazyLoad>
               </CollapsibleSection>
             )}
 
             <CollapsibleSection title="AI Chatbot Assistant" icon="💬" defaultOpen={false}>
-              <AIChatbot
-                context={{
-                  address,
-                  riskScore,
-                  complaints,
-                  crime,
-                  weather,
-                }}
-              />
+              <LazyLoad fallback={<div className="h-96 bg-gray-100 rounded-lg animate-pulse" />}>
+                <AIChatbot
+                  context={{
+                    address,
+                    riskScore,
+                    complaints,
+                    crime,
+                    weather,
+                  }}
+                />
+              </LazyLoad>
             </CollapsibleSection>
           </div>
         )}
 
         {activeTab === 'budget' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <BudgetTracker
-              address={address}
-              riskScore={riskScore}
-            />
-            <RoommateConnector
-              address={address}
-              riskScore={riskScore}
-            />
+            <LazyLoad fallback={<div className="h-64 bg-gray-100 rounded-xl animate-pulse" />}>
+              <BudgetTracker
+                address={address}
+                riskScore={riskScore}
+              />
+            </LazyLoad>
+            <LazyLoad fallback={<div className="h-64 bg-gray-100 rounded-xl animate-pulse" />}>
+              <RoommateConnector
+                address={address}
+                riskScore={riskScore}
+              />
+            </LazyLoad>
           </div>
         )}
       </div>

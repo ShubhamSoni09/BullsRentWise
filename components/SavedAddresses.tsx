@@ -1,19 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import LazyList from '@/components/LazyList';
 
 interface SavedAddress {
   id: string;
   address: string;
   riskScore: number;
+  lat?: number;
+  lng?: number;
   date: string;
 }
 
 interface SavedAddressesProps {
   onAddressSaved?: () => void;
+  onAddressesChange?: (addresses: SavedAddress[]) => void;
 }
 
-export default function SavedAddresses({ onAddressSaved }: SavedAddressesProps) {
+export default function SavedAddresses({ onAddressSaved, onAddressesChange }: SavedAddressesProps) {
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
 
   useEffect(() => {
@@ -21,7 +25,11 @@ export default function SavedAddresses({ onAddressSaved }: SavedAddressesProps) 
     const loadAddresses = () => {
       const saved = localStorage.getItem('savedAddresses');
       if (saved) {
-        setSavedAddresses(JSON.parse(saved));
+        const addresses = JSON.parse(saved);
+        setSavedAddresses(addresses);
+        if (onAddressesChange) {
+          onAddressesChange(addresses);
+        }
       }
     };
     loadAddresses();
@@ -66,7 +74,7 @@ export default function SavedAddresses({ onAddressSaved }: SavedAddressesProps) 
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 lg:p-6">
+    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 lg:p-6 overflow-hidden hover-lift">
       <div className="flex items-center gap-2 mb-4">
         <div className="p-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg">
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,28 +88,32 @@ export default function SavedAddresses({ onAddressSaved }: SavedAddressesProps) 
           </span>
         )}
       </div>
-      {savedAddresses.length === 0 ? (
-        <div className="text-center py-8">
-          <svg className="w-16 h-16 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-          </svg>
-          <p className="text-gray-500 text-sm">No saved addresses yet</p>
-          <p className="text-gray-400 text-xs mt-1">Save addresses to compare later</p>
-        </div>
-      ) : (
-        <ul className="space-y-3 max-h-96 overflow-y-auto">
-          {savedAddresses.map((addr) => {
+        {savedAddresses.length === 0 ? (
+          <div className="text-center py-12 animate-fadeIn">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full mb-4">
+              <svg className="w-10 h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+            </div>
+            <p className="text-gray-600 text-sm font-medium">No saved addresses yet</p>
+            <p className="text-gray-400 text-xs mt-1">Save addresses to compare later</p>
+          </div>
+        ) : (
+        <div className="max-h-96 overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
+          <LazyList
+            items={savedAddresses}
+            renderItem={(addr) => {
             const getRiskColor = (score: number) => {
               if (score < 30) return 'bg-green-500';
               if (score < 60) return 'bg-yellow-500';
               return 'bg-red-500';
             };
             return (
-              <li
-                key={addr.id}
-                className="flex justify-between items-start p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-blue-300"
-              >
-                <div className="flex-1 min-w-0">
+            <li
+              key={addr.id}
+              className="flex justify-between items-start p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-lg hover-lift transition-all duration-300 hover:border-blue-400 gap-2 cursor-pointer"
+            >
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="text-sm font-semibold text-gray-900 truncate">{addr.address}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <div className={`px-2 py-0.5 rounded-lg text-white text-xs font-bold ${getRiskColor(addr.riskScore)}`}>
@@ -116,13 +128,13 @@ export default function SavedAddresses({ onAddressSaved }: SavedAddressesProps) 
                     const budget = JSON.parse(budgetData);
                     if (budget.estimatedRent > 0) {
                       return (
-                        <div className="mt-2 flex items-center gap-1 text-xs text-blue-600 font-medium">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="mt-2 flex items-center gap-1 text-xs text-blue-600 font-medium flex-wrap">
+                          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>${budget.estimatedRent.toFixed(0)}/mo</span>
+                          <span className="truncate">${budget.estimatedRent.toFixed(0)}/mo</span>
                           {budget.roommateCount > 0 && (
-                            <span className="text-gray-500">• ${(budget.estimatedRent / (budget.roommateCount + 1)).toFixed(0)}/person</span>
+                            <span className="text-gray-500 truncate">• ${(budget.estimatedRent / (budget.roommateCount + 1)).toFixed(0)}/person</span>
                           )}
                         </div>
                       );
@@ -140,10 +152,14 @@ export default function SavedAddresses({ onAddressSaved }: SavedAddressesProps) 
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
-            </li>
-          );
-          })}
-        </ul>
+                </li>
+              );
+            }}
+            initialCount={5}
+            increment={5}
+            className="space-y-3"
+          />
+        </div>
       )}
     </div>
   );

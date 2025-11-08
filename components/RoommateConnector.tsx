@@ -187,7 +187,7 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
 
         {/* Roommates List */}
         {roommates.length > 0 && (
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="space-y-2 max-h-48 overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
             <h4 className="font-semibold text-gray-900 text-sm">Connected ({roommates.length})</h4>
             {roommates.map((roommate) => (
               <div

@@ -1,16 +1,39 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import AddressInput from '@/components/AddressInput';
-import RiskResults from '@/components/RiskResults';
-import SavedAddresses from '@/components/SavedAddresses';
 import SkeletonLoader from '@/components/SkeletonLoader';
+
+// Lazy load heavy components
+const RiskResults = dynamic(() => import('@/components/RiskResults'), {
+  loading: () => <SkeletonLoader />,
+  ssr: false,
+});
+
+const UserPreferences = dynamic(() => import('@/components/UserPreferences'), {
+  ssr: false,
+});
+
+const PropertyDiscovery = dynamic(() => import('@/components/PropertyDiscovery'), {
+  ssr: false,
+});
+
+const SavedAddresses = dynamic(() => import('@/components/SavedAddresses'), {
+  ssr: false,
+});
+
+const AIRecommendations = dynamic(() => import('@/components/AIRecommendations'), {
+  ssr: false,
+});
 
 export default function Home() {
   const [riskData, setRiskData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>('');
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [discoveredProperties, setDiscoveredProperties] = useState<any[]>([]);
 
   const handleAddressSubmit = async (address: string) => {
     setLoading(true);
@@ -80,6 +103,18 @@ export default function Home() {
         riskScore,
       });
 
+      // Update saved address with location if it exists
+      const saved = localStorage.getItem('savedAddresses');
+      if (saved) {
+        const savedAddresses = JSON.parse(saved);
+        const addressIndex = savedAddresses.findIndex((addr: any) => addr.address === address);
+        if (addressIndex !== -1) {
+          savedAddresses[addressIndex].lat = lat;
+          savedAddresses[addressIndex].lng = lng;
+          localStorage.setItem('savedAddresses', JSON.stringify(savedAddresses));
+        }
+      }
+
       toast.success('Risk analysis complete!');
     } catch (error: any) {
       console.error('Error fetching data:', error);
@@ -146,7 +181,7 @@ export default function Home() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto p-4 lg:p-6">
+      <div className="relative max-w-7xl mx-auto p-4 lg:p-6 overflow-x-hidden">
         {/* Enhanced Header */}
         <div className="text-center mb-6 lg:mb-8 animate-fadeIn">
           <div className="inline-block mb-3">
@@ -187,9 +222,26 @@ export default function Home() {
           
           {/* Sidebar - Fixed Height, Scrollable */}
           <div className="lg:col-span-4">
-            <div className="sticky top-4 space-y-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
+            <div className="sticky top-4 space-y-4 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
               <div className="animate-slideIn" style={{ animationDelay: '0.2s' }}>
-                <SavedAddresses onAddressSaved={() => {}} />
+                <UserPreferences />
+              </div>
+              <div className="animate-slideIn" style={{ animationDelay: '0.25s' }}>
+                <PropertyDiscovery 
+                  onPropertiesChange={(properties) => setDiscoveredProperties(properties)}
+                />
+              </div>
+              <div className="animate-slideIn" style={{ animationDelay: '0.3s' }}>
+                <SavedAddresses 
+                  onAddressSaved={() => {}} 
+                  onAddressesChange={(addresses) => setSavedAddresses(addresses)}
+                />
+              </div>
+              <div className="animate-slideIn" style={{ animationDelay: '0.4s' }}>
+                <AIRecommendations 
+                  savedAddresses={savedAddresses} 
+                  discoveredProperties={discoveredProperties}
+                />
               </div>
             </div>
           </div>

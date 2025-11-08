@@ -95,7 +95,7 @@ export default function AIChatbot({ context }: AIChatbotProps) {
         <h3 className="font-bold text-gray-900">AI Rental Assistant</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+      <div className="flex-1 overflow-y-auto space-y-3 mb-4 scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
         {messages.map((msg, idx) => (
           <div
             key={idx}

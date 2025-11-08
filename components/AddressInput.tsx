@@ -19,7 +19,7 @@ export default function AddressInput({ onSubmit, loading, loadingStep }: Address
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 lg:p-8 hover:shadow-2xl transition-all duration-300">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 lg:p-8 hover:shadow-2xl transition-all duration-300 hover-lift">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
