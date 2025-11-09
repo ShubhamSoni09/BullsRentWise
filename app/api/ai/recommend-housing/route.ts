@@ -20,6 +20,7 @@ interface PropertyData {
     };
   };
   weather?: any;
+  source?: string;
 }
 
 interface UserPreferences {
@@ -50,6 +51,7 @@ interface Recommendation {
   suitability: 'excellent' | 'good' | 'fair' | 'poor';
   riskScore: number;
   estimatedCost?: number;
+  source?: string;
 }
 
 // Calculate distance between two coordinates (Haversine formula)
