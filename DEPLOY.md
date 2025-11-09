@@ -204,10 +204,57 @@ vercel --prod
 ## Pre-Deployment Checklist
 
 - [ ] Code pushed to Git repository
-- [ ] Test build locally: `npm run build`
+- [ ] **Test build locally: `npm run build`** (see below)
 - [ ] Environment variables ready
 - [ ] Supabase table created (see README.md)
 - [ ] All API keys available
+
+---
+
+## 🧪 Testing Builds Locally (Before Deploying)
+
+**Always test your build locally before deploying!** This catches errors early and saves time.
+
+### Quick Build Test
+
+```bash
+# Test the production build
+npm run build
+
+# If successful, test the production server locally
+npm run start
+```
+
+### What to Check:
+
+1. **Build succeeds** - No TypeScript or ESLint errors
+2. **No missing dependencies** - All packages install correctly
+3. **Production server runs** - `npm run start` works without errors
+
+### Common Issues to Fix Before Deploying:
+
+- ✅ **TypeScript errors** - Fix all type errors
+- ✅ **ESLint errors** - Fix critical linting errors (warnings are OK)
+- ✅ **Missing imports** - Ensure all files are imported correctly
+- ✅ **Environment variables** - Test with `.env.local` file
+
+### Full Local Test Process:
+
+```bash
+# 1. Clean install (simulates fresh Netlify/Vercel environment)
+rm -rf node_modules package-lock.json
+npm install
+
+# 2. Run build (this is what Netlify/Vercel does)
+npm run build
+
+# 3. If build succeeds, test production server
+npm run start
+
+# 4. Visit http://localhost:3000 and test your app
+```
+
+**Pro Tip:** If `npm run build` fails locally, it will fail on Netlify/Vercel too. Always fix local build errors before pushing!
 
 ---
 
