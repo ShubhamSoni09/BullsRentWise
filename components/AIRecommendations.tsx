@@ -182,8 +182,8 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
     // Check which recommendations are already saved
     const saved = localStorage.getItem('savedAddresses');
     if (saved) {
-      const savedAddressesList = JSON.parse(saved);
-      const savedSet = new Set(savedAddressesList.map((addr: any) => addr.address));
+      const savedAddressesList = JSON.parse(saved) as any[];
+      const savedSet = new Set<string>(savedAddressesList.map((addr: any) => addr.address as string));
       setSavedRecommendations(savedSet);
     }
   }, [recommendations]);
