@@ -235,7 +235,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Preferred Rent Range</label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <input
                     type="number"
                     value={preferences.preferredRentRange.min || ''}
@@ -244,10 +244,10 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                       preferredRentRange: { ...preferences.preferredRentRange, min: parseFloat(e.target.value) || 0 }
                     })}
                     placeholder="Min"
-                    className="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 bg-white text-gray-900 placeholder-gray-400"
+                    className="w-28 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 placeholder-gray-400"
                     style={{ WebkitTextFillColor: '#111827' }}
                   />
-                  <span className="text-gray-500 text-sm font-medium">to</span>
+                  <span className="text-gray-500 text-sm font-medium px-1">to</span>
                   <input
                     type="number"
                     value={preferences.preferredRentRange.max || ''}
@@ -256,7 +256,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                       preferredRentRange: { ...preferences.preferredRentRange, max: parseFloat(e.target.value) || 0 }
                     })}
                     placeholder="Max"
-                    className="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 bg-white text-gray-900 placeholder-gray-400"
+                    className="w-28 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 placeholder-gray-400"
                     style={{ WebkitTextFillColor: '#111827' }}
                   />
                 </div>
