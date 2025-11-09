@@ -232,7 +232,6 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                     style={{ 
                       WebkitTextFillColor: '#111827',
                       color: '#111827',
-                      WebkitOpacity: 1,
                       opacity: 1
                     }}
                   />
@@ -254,7 +253,6 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                     style={{ 
                       WebkitTextFillColor: '#111827',
                       color: '#111827',
-                      WebkitOpacity: 1,
                       opacity: 1,
                       width: '65px', 
                       minWidth: '65px', 
@@ -275,7 +273,6 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                     style={{ 
                       WebkitTextFillColor: '#111827',
                       color: '#111827',
-                      WebkitOpacity: 1,
                       opacity: 1,
                       width: '65px', 
                       minWidth: '65px', 
