@@ -5,15 +5,15 @@
 ## What It Does
 
 BullsRentWise helps UB students quickly scan a Buffalo rental address for:
-- **311 Complaints**: Recent heat, leak, and pest complaints within 400m radius
-- **Weather Risk**: Short-term humidity/precipitation data to flag potential mold/water issues
-- **Crime Data**: Recent crime incidents (violent, property, drug, vandalism) within 400m radius
-- **AI-Powered Analysis**: NLP complaint analysis, ML risk predictions, and AI chatbot assistant
-- **Property Photos**: Google Places API integration for property photos
-- **Budget Tracking**: Track rent, utilities, and affordability per person
-- **Roommate Connection**: Real-time Supabase groups to share codes and collaborate
-- **Risk Score**: 0-100 risk assessment with visual map and red flags
-- **Save Addresses**: ⭐ Save addresses locally (with optional Supabase cloud sync)
+- **311 Complaints**: Heat, leak, pest, noise, and sanitation violations in the last 90 days
+- **Weather & Mold Risk**: National Weather Service trends plus mold/moisture heuristics
+- **Crime Data**: Violent, property, drug, and vandalism incidents around the neighborhood
+- **AI Assistants**: Complaint summaries, GPT chat, risk prediction, and spoken audio briefings
+- **Property Media**: Google Places photos with automatic Street View fallback
+- **Budget Tracking**: Split rent, utilities, and affordability per roommate
+- **Roommate Collaboration**: Supabase groups with share codes, votes, and comments
+- **Risk Score**: 0–100 rating with map overlays and red-flag callouts
+- **Saved Addresses**: ⭐ Local favorites with optional Supabase sync across devices
 
 ## Tech Stack
 
@@ -25,13 +25,15 @@ BullsRentWise helps UB students quickly scan a Buffalo rental address for:
 - **Leaflet** - Map library
 
 ### Backend (Next.js API Routes)
-- **Geocoding API**: OpenStreetMap Nominatim (free, no key needed)
-- **311 Data**: Buffalo Open Data Portal (Socrata SODA API) - requires dataset ID
-- **Crime Data**: Buffalo Open Data Portal (Socrata SODA API) - requires dataset ID
-- **Weather API**: National Weather Service (NWS) - free, no key needed
-- **AI/ML**: OpenAI GPT-3.5-turbo (optional, for enhanced features)
-- **Google Places API**: For property photos (optional)
-- **Storage**: localStorage (local) + Supabase (optional cloud)
+- **Geocoding**: OpenStreetMap Nominatim
+- **311 Complaints**: Buffalo Open Data Portal (Socrata SODA API)
+- **Crime Reports**: Buffalo Open Data Portal
+- **Weather & Mold**: National Weather Service feeds plus derived mold risk index
+- **Pest & Mold Hotline**: Tenant agency guidance and escalation steps
+- **AI + Audio**: OpenAI GPT-4o-mini / GPT-3.5 chat, summaries, and text-to-speech
+- **Property Media**: Google Places Photos with Street View fallback
+- **Roommates Collaboration**: Supabase REST + Realtime for groups, votes, comments
+- **Storage**: Browser localStorage with Supabase sync tables
 
 ### Why Next.js API Routes?
 
@@ -54,44 +56,30 @@ BullsRentWise helps UB students quickly scan a Buffalo rental address for:
 npm install
 ```
 
-2. **Set up environment variables** (optional):
-Create a `.env.local` file:
+2. **Set up environment variables** (create `.env.local`):
 ```env
-# Required for Buffalo 311 API integration
-# Find the dataset ID at https://data.buffalony.gov
-BUFFALO_311_DATASET_ID=your-dataset-id-here
+# Buffalo Open Data (https://data.buffalony.gov)
+BUFFALO_311_DATASET_ID=311-dataset-id
+BUFFALO_CRIME_DATASET_ID=crime-dataset-id
+BUFFALO_API_TOKEN=optional-socrata-token
 
-# Required for Buffalo Crime API integration
-# Find the dataset ID at https://data.buffalony.gov (search for "crime" or "police")
-BUFFALO_CRIME_DATASET_ID=your-crime-dataset-id-here
+# AI + Audio (https://platform.openai.com/)
+OPENAI_API_KEY=sk-your-openai-key
 
-# Optional: For Buffalo APIs (if they require authentication)
-BUFFALO_API_TOKEN=your_token_here
+# Property Media (https://console.cloud.google.com/apis/credentials)
+GOOGLE_API_KEY=your-google-api-key
 
-# Optional: For AI features (OpenAI API)
-# Get your key at https://platform.openai.com/api-keys
-OPENAI_API_KEY=sk-your-openai-key-here
+# Supabase (https://supabase.com) for roommates + cloud sync
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 
-# Optional: For Google APIs (Places, Maps, Geocoding, etc.)
-# Get your key at https://console.cloud.google.com/apis/credentials
-# Enable the APIs you need: "Places API", "Maps JavaScript API", "Geocoding API", etc.
-# One API key works for all Google services!
-GOOGLE_API_KEY=your-google-api-key-here
-
-# Optional: Alternative Weather APIs (if NWS fails)
-# OpenWeatherMap: Free tier available at https://openweathermap.org/api
-OPENWEATHER_API_KEY=your-openweather-api-key-here
-# WeatherAPI.com: Free tier available at https://www.weatherapi.com/
-WEATHERAPI_KEY=your-weatherapi-key-here
-
-# Optional: Alternative Crime Data APIs
-# CrimeoMeter: Get API key at https://www.crimeometer.com/
-CRIMEOMETER_API_KEY=your-crimeometer-api-key-here
-
-# Optional: For Supabase roommate collaboration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+# Optional alternative data providers
+OPENWEATHER_API_KEY=optional
+WEATHERAPI_KEY=optional
+CRIMEOMETER_API_KEY=optional
 ```
+
+> Demo Supabase credentials live in the repo for local testing—swap them out before deploying.
 
 3. **Run development server:**
 ```bash
@@ -109,11 +97,15 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 │   │   ├── geocode/route.ts      # Geocoding API (OpenStreetMap)
 │   │   ├── complaints/route.ts    # 311 complaints API (Buffalo Open Data)
 │   │   ├── crime/route.ts         # Crime data API (Buffalo Open Data)
-│   │   ├── weather/route.ts       # NWS weather API
+│   │   ├── weather/route.ts       # Weather + mold index API
+│   │   ├── pest-mold/route.ts     # Tenant hotline resources
+│   │   ├── roommates/route.ts     # Supabase roommate API
 │   │   └── ai/
 │   │       ├── analyze-complaint/route.ts  # AI complaint analysis
+│   │       ├── audio-summary/route.ts      # GPT text-to-speech summaries
 │   │       ├── chat/route.ts               # AI chatbot
-│   │       └── predict-risk/route.ts      # ML risk prediction
+│   │       ├── predict-risk/route.ts       # ML risk prediction
+│   │       └── recommend-housing/route.ts  # Housing suggestions
 │   ├── layout.tsx                 # Root layout
 │   ├── page.tsx                   # Main page
 │   └── globals.css                # Global styles
@@ -125,7 +117,11 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 │   ├── AIRiskPrediction.tsx       # ML risk predictions
 │   ├── AIComplaintAnalysis.tsx    # AI complaint analysis
 │   ├── BudgetTracker.tsx          # Budget and affordability tracker
-│   ├── RoommatesManager.tsx       # Roommate connection and collaboration
+│   ├── RoommatesManager.tsx       # Supabase roommate collaboration hub
+│   └── PropertyPhotos.tsx         # Google Places + Street View gallery
+├── lib/
+│   └── supabaseClient.ts          # Supabase helpers
+├── DEPLOY.md                      # Hosting + CI/CD notes
 └── package.json
 ```
 
@@ -151,53 +147,52 @@ The API integration includes:
 - ✅ Distance calculation
 - ✅ Graceful error handling
 
-### Supabase Integration (Optional)
+### Supabase Setup (Roommates + Cloud Sync)
 
-For cloud storage of saved addresses:
-
-1. **Create Supabase project** at https://supabase.com
-2. **Create table:**
+1. **Create a project** at [supabase.com](https://supabase.com) and copy the project URL + anon key.
+2. **Create the tables** (enable `uuid-ossp` if prompted):
 ```sql
-CREATE TABLE saved_addresses (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id TEXT,
-  address TEXT,
-  risk_score INTEGER,
-  lat DECIMAL,
-  lng DECIMAL,
-  created_at TIMESTAMP DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS saved_addresses (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id text,
+  address text,
+  risk_score int,
+  lat double precision,
+  lng double precision,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS roommate_groups (
+  share_code text PRIMARY KEY,
+  roommates jsonb DEFAULT '[]'::jsonb,
+  updated_at timestamptz DEFAULT now()
 );
 ```
+3. **Enable Row Level Security** and add lightweight policies:
+```sql
+ALTER TABLE saved_addresses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE roommate_groups ENABLE ROW LEVEL SECURITY;
 
-3. **Update `components/SavedAddresses.tsx`** to sync with Supabase
+CREATE POLICY "saved addresses read" ON saved_addresses
+  FOR SELECT USING (auth.uid()::text = user_id);
 
-### Firebase Roommate Collaboration (Optional)
+CREATE POLICY "saved addresses write" ON saved_addresses
+  FOR INSERT WITH CHECK (auth.uid()::text = user_id);
 
-1. **Create a Firebase project** at https://console.firebase.google.com  
-2. **Enable Authentication** ➜ "Sign-in method" ➜ turn on *Anonymous* and optionally Google/Email.
-3. **Enable Firestore Database** (Start in production mode to enforce rules).  
-4. **Update Firestore rules** so only group members can read/write their group:
-   ```js
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /groups/{groupId} {
-         allow read, write: if request.auth != null;
-         match /members/{userId} {
-           allow read, write: if request.auth != null && request.auth.uid == userId;
-         }
-         match /properties/{propertyId} {
-           allow read, write: if request.auth != null;
-         }
-       }
-       match /users/{userId} {
-         allow read, write: if request.auth != null && request.auth.uid == userId;
-       }
-     }
-   }
-   ```
-5. **Add the Firebase keys** from project settings to `.env.local` (see sample above).  
-6. **Refresh the dev server**: the “My Roommates” panel will prompt for a display name when sharing or joining.
+CREATE POLICY "roommates read" ON roommate_groups
+  FOR SELECT USING (true);
+
+CREATE POLICY "roommates write" ON roommate_groups
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "roommates update" ON roommate_groups
+  FOR UPDATE USING (true) WITH CHECK (true);
+```
+
+> These policies are hackathon-friendly; tighten them for production (e.g., restrict by auth role or service key).
+
+4. **Paste `NEXT_PUBLIC_SUPABASE_URL` & `NEXT_PUBLIC_SUPABASE_ANON_KEY`** into `.env.local`.
+5. Restart `npm run dev` so the Supabase client picks up your credentials.
 
 ## API Endpoints
 
@@ -252,6 +247,18 @@ Fetch weather data (humidity/precipitation).
 }
 ```
 
+### `/api/roommates`
+- `GET /api/roommates?shareCode=ABCD123` → Fetch roommates for a share code
+- `POST` body `{ shareCode, roommates: [...] }` → Create or overwrite a group
+- `PUT` body `{ shareCode, roommate: {...} }` → Add or update a roommate
+- `DELETE /api/roommates?shareCode=ABCD123&roommateId=rm_123` → Remove a roommate
+
+### POST `/api/ai/audio-summary`
+Generate an MP3 briefing via OpenAI text-to-speech. Returns a signed URL for playback.
+
+### GET `/api/pest-mold`
+Provides hotline numbers, checklists, and local agencies when pest or mold issues are detected.
+
 ## Risk Score Calculation
 
 The risk score (0-100) is calculated based on:
@@ -290,11 +297,16 @@ npm run build
 # Deploy the .next folder
 ```
 
+See `DEPLOY.md` for end-to-end Vercel/Netlify deployment steps, cron ideas, and CI tips.
+
 ## License
 
 MIT
 
 ## Contributing
 
-This is a student project. Feel free to fork and improve!
+- Hazel Mahajan (UBIT 50592568)
+- Shubham Vikas Soni (UBIT 50593888)
+
+We welcome forks, issues, and pull requests—feel free to build on BullsRentWise!
 
