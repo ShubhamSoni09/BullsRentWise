@@ -112,7 +112,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
   ];
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 p-3 overflow-hidden hover-lift">
+    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 p-3 overflow-hidden hover-lift max-w-full">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
@@ -219,7 +219,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
               </svg>
               Budget
             </h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Max Monthly Budget</label>
                 <div className="flex items-center gap-1">
@@ -228,13 +228,14 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                     type="number"
                     value={preferences.maxMonthlyBudget || ''}
                     onChange={(e) => setPreferences({ ...preferences, maxMonthlyBudget: parseFloat(e.target.value) || 0 })}
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-transparent"
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-400"
+                    style={{ WebkitTextFillColor: '#111827' }}
                   />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Preferred Rent Range</label>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <input
                     type="number"
                     value={preferences.preferredRentRange.min || ''}
@@ -243,9 +244,10 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                       preferredRentRange: { ...preferences.preferredRentRange, min: parseFloat(e.target.value) || 0 }
                     })}
                     placeholder="Min"
-                    className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500"
+                    className="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 bg-white text-gray-900 placeholder-gray-400"
+                    style={{ WebkitTextFillColor: '#111827' }}
                   />
-                  <span className="text-gray-500">-</span>
+                  <span className="text-gray-500 text-sm font-medium">to</span>
                   <input
                     type="number"
                     value={preferences.preferredRentRange.max || ''}
@@ -254,7 +256,8 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                       preferredRentRange: { ...preferences.preferredRentRange, max: parseFloat(e.target.value) || 0 }
                     })}
                     placeholder="Max"
-                    className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500"
+                    className="w-24 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 bg-white text-gray-900 placeholder-gray-400"
+                    style={{ WebkitTextFillColor: '#111827' }}
                   />
                 </div>
               </div>
@@ -309,12 +312,13 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                   type="number"
                   value={preferences.maxDistanceToUB || ''}
                   onChange={(e) => setPreferences({ ...preferences, maxDistanceToUB: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500"
+                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 bg-white text-gray-900 placeholder-gray-400"
+                  style={{ WebkitTextFillColor: '#111827' }}
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2">Preferred Neighborhoods</label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 overflow-x-hidden">
                   {neighborhoodOptions.map((neighborhood) => (
                     <button
                       key={neighborhood}
