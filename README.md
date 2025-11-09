@@ -11,7 +11,7 @@ BullsRentWise helps UB students quickly scan a Buffalo rental address for:
 - **AI-Powered Analysis**: NLP complaint analysis, ML risk predictions, and AI chatbot assistant
 - **Property Photos**: Google Places API integration for property photos
 - **Budget Tracking**: Track rent, utilities, and affordability per person
-- **Roommate Connection**: Connect with roommates, share properties, vote and comment
+- **Roommate Connection**: Real-time Firebase groups to share codes, votes, comments, and audio summaries
 - **Risk Score**: 0-100 risk assessment with visual map and red flags
 - **Save Addresses**: ⭐ Save addresses locally (with optional Supabase cloud sync)
 
@@ -81,6 +81,15 @@ GOOGLE_API_KEY=your-google-api-key-here
 # Optional: For Supabase cloud storage
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+
+# Optional: For Firebase roommate collaboration
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
+# The following are only needed if you enable storage/messaging
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 ```
 
 **Note:** See `BUFFALO_311_SETUP.md`, `CRIME_DATA_SETUP.md`, and `AI_ML_SETUP.md` for detailed setup instructions.
@@ -164,6 +173,34 @@ CREATE TABLE saved_addresses (
 ```
 
 3. **Update `components/SavedAddresses.tsx`** to sync with Supabase
+
+### Firebase Roommate Collaboration (Optional)
+
+1. **Create a Firebase project** at https://console.firebase.google.com  
+2. **Enable Authentication** ➜ "Sign-in method" ➜ turn on *Anonymous* and optionally Google/Email.
+3. **Enable Firestore Database** (Start in production mode to enforce rules).  
+4. **Update Firestore rules** so only group members can read/write their group:
+   ```js
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /groups/{groupId} {
+         allow read, write: if request.auth != null;
+         match /members/{userId} {
+           allow read, write: if request.auth != null && request.auth.uid == userId;
+         }
+         match /properties/{propertyId} {
+           allow read, write: if request.auth != null;
+         }
+       }
+       match /users/{userId} {
+         allow read, write: if request.auth != null && request.auth.uid == userId;
+       }
+     }
+   }
+   ```
+5. **Add the Firebase keys** from project settings to `.env.local` (see sample above).  
+6. **Refresh the dev server**: the “My Roommates” panel will prompt for a display name when sharing or joining.
 
 ## API Endpoints
 

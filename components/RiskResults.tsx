@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import RiskBreakdown from '@/components/RiskBreakdown';
@@ -73,10 +73,61 @@ interface RiskResultsProps {
   onSave?: () => void;
 }
 
+function buildAudioSummary(data: RiskResultsProps['data']): string {
+  const { address, riskScore, complaints, weather, crime } = data;
+
+  const riskLevel = riskScore < 30 ? 'low risk' : riskScore < 60 ? 'moderate risk' : 'higher risk';
+  const complaintCount = complaints.length;
+  const topComplaint = complaints[0]?.type || complaints[0]?.description;
+  const weatherWarnings: string[] = [];
+  if (weather?.avgHumidity > 80) weatherWarnings.push('very humid conditions');
+  else if (weather?.avgHumidity > 70) weatherWarnings.push('elevated humidity');
+  if (weather?.totalPrecip > 1) weatherWarnings.push('recent heavy precipitation');
+  else if (weather?.totalPrecip > 0.5) weatherWarnings.push('notable precipitation');
+
+  const crimeStats = crime?.stats;
+  const totalCrimes = crimeStats?.total ?? 0;
+  const violent = crimeStats?.violent ?? 0;
+  const property = crimeStats?.property ?? 0;
+
+  const lines: string[] = [];
+  lines.push(`Here is your BullsRentWise briefing for ${address}.`);
+  lines.push(`Overall risk score is ${riskScore} out of one hundred, indicating ${riskLevel}.`);
+
+  if (complaintCount > 0) {
+    const mention = topComplaint ? `The most recent complaint mentions ${topComplaint}.` : '';
+    lines.push(`We found ${complaintCount} recent city service complaints within eight hundred meters. ${mention}`.trim());
+  } else {
+    lines.push('No recent 3-1-1 complaints were found near this address.');
+  }
+
+  if (totalCrimes > 0) {
+    const crimeHighlights: string[] = [];
+    if (violent > 0) crimeHighlights.push(`${violent} violent incidents`);
+    if (property > 0) crimeHighlights.push(`${property} property crimes`);
+    const crimeSummary = crimeHighlights.length ? crimeHighlights.join(' and ') : `${totalCrimes} incidents overall`;
+    lines.push(`Police data shows ${crimeSummary} in the last ninety days.`);
+  } else {
+    lines.push('No major crime incidents were detected in the recent dataset.');
+  }
+
+  if (weatherWarnings.length) {
+    lines.push(`Watch out for ${weatherWarnings.join(' and ')} which can increase mold or leak risks.`);
+  }
+
+  lines.push('That is your thirty second rental safety check from BullsRentWise.');
+
+  return lines.join(' ');
+}
+
 export default function RiskResults({ data, onSave }: RiskResultsProps) {
   const { address, lat, lng, complaints, weather, crime, riskScore } = data;
   const [isSaved, setIsSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'location' | 'photos' | 'ai'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'ai' | 'budget'>('overview');
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     // Check if address is already saved
@@ -86,6 +137,76 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
       setIsSaved(savedAddresses.some((addr: any) => addr.address === address));
     }
   }, [address]);
+
+  useEffect(() => {
+    const element = audioRef.current;
+    if (!element) return;
+
+    const handleEnded = () => setIsPlaying(false);
+    const handlePause = () => setIsPlaying(false);
+    const handlePlay = () => setIsPlaying(true);
+
+    element.addEventListener('ended', handleEnded);
+    element.addEventListener('pause', handlePause);
+    element.addEventListener('play', handlePlay);
+
+    return () => {
+      element.removeEventListener('ended', handleEnded);
+      element.removeEventListener('pause', handlePause);
+      element.removeEventListener('play', handlePlay);
+    };
+  }, [audioUrl]);
+
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {
+        toast.error('Unable to play audio.');
+        setIsPlaying(false);
+      });
+    }
+  }, [audioUrl]);
+
+  const handlePlayAudioSummary = async () => {
+    if (audioLoading) return;
+
+    if (audioUrl && audioRef.current) {
+      if (audioRef.current.paused) {
+        audioRef.current.play().catch(() => {
+          toast.error('Unable to play audio.');
+        });
+      } else {
+        audioRef.current.pause();
+      }
+      return;
+    }
+
+    setAudioLoading(true);
+    try {
+      const summaryText = buildAudioSummary(data);
+      const response = await fetch('/api/ai/audio-summary', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: summaryText }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to generate audio summary.' }));
+        throw new Error(error.error || 'Failed to generate audio summary.');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+    } catch (error: any) {
+      console.error('Audio summary error:', error);
+      toast.error(error.message || 'Could not generate audio summary.');
+    } finally {
+      setAudioLoading(false);
+    }
+  };
 
   const handleSave = () => {
     const saved = localStorage.getItem('savedAddresses');
@@ -145,29 +266,61 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
             </div>
           </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={isSaved}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 shadow-lg ${
-            isSaved
-              ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl transform hover:scale-105'
-          }`}
-        >
-          {isSaved ? (
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Saved
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <span>⭐</span>
-              Save
-            </span>
-          )}
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          <button
+            onClick={handleSave}
+            disabled={isSaved}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 shadow-lg ${
+              isSaved
+                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl transform hover:scale-105'
+            }`}
+          >
+            {isSaved ? (
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Saved
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span>⭐</span>
+                Save
+              </span>
+            )}
+          </button>
+          <button
+            onClick={handlePlayAudioSummary}
+            disabled={audioLoading}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-lg flex items-center gap-2 ${
+              audioLoading
+                ? 'bg-gray-200 text-gray-500 cursor-wait'
+                : isPlaying
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
+                  : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600'
+            }`}
+            title="Listen to a 30-second risk summary"
+          >
+            {audioLoading ? (
+              <>
+                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Preparing…
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V5l12 7-12 7z" />
+                </svg>
+                {isPlaying ? 'Pause Audio' : audioUrl ? 'Replay Summary' : 'Play Summary'}
+              </>
+            )}
+          </button>
+          <audio ref={audioRef} src={audioUrl ?? undefined} preload="auto" className="hidden" />
+        </div>
       </div>
 
       {/* Enhanced Tabs */}

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       // Return empty array if API key is not configured
       console.warn('Google API key not configured');
-      return NextResponse.json({ photos: [] });
+      return NextResponse.json({ photos: [], missingApiKey: true });
     }
 
     // Step 1: Find place by address/location using Places API Text Search
@@ -59,7 +59,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!placeId) {
-      return NextResponse.json({ photos: [] });
+      const streetViewPhotos = await getStreetViewPhotos(lat, lng, apiKey);
+      return NextResponse.json({ photos: streetViewPhotos, streetViewFallback: !!streetViewPhotos.length });
     }
 
     // Step 2: Get place details including photos
@@ -67,27 +68,35 @@ export async function POST(request: NextRequest) {
     const detailsResponse = await fetch(detailsUrl);
     const detailsData = await detailsResponse.json();
 
-    if (detailsData.status !== 'OK' || !detailsData.result.photos) {
-      return NextResponse.json({ photos: [] });
+    let photos: any[] = [];
+
+    if (detailsData.status === 'OK' && detailsData.result.photos) {
+      // Step 3: Get photo URLs (max 10 photos)
+      photos = detailsData.result.photos.slice(0, 10).map((photo: any, index: number) => {
+        // Google Places Photo API requires photo_reference
+        const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${apiKey}`;
+        
+        return {
+          id: `google_${placeId}_${index}`,
+          url: photoUrl,
+          caption: photo.html_attributions?.[0] || '',
+          date: new Date().toISOString(),
+          source: 'google_places',
+          width: photo.width,
+          height: photo.height,
+        };
+      });
     }
 
-    // Step 3: Get photo URLs (max 10 photos)
-    const photos = detailsData.result.photos.slice(0, 10).map((photo: any, index: number) => {
-      // Google Places Photo API requires photo_reference
-      const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${apiKey}`;
-      
-      return {
-        id: `google_${placeId}_${index}`,
-        url: photoUrl,
-        caption: photo.html_attributions?.[0] || '',
-        date: new Date().toISOString(),
-        source: 'google_places',
-        width: photo.width,
-        height: photo.height,
-      };
-    });
+    if (!photos.length) {
+      photos = await getStreetViewPhotos(lat, lng, apiKey);
+    }
 
-    return NextResponse.json({ photos, placeName: detailsData.result.name || address });
+    return NextResponse.json({
+      photos,
+      placeName: detailsData.result?.name || address,
+      streetViewFallback: photos.length > 0 && photos[0].source === 'google_street_view',
+    });
   } catch (error: any) {
     console.error('Places API error:', error);
     return NextResponse.json({ error: 'Failed to fetch photos', photos: [] }, { status: 500 });
@@ -105,5 +114,34 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
     Math.sin(dLng / 2) * Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+}
+
+
+async function getStreetViewPhotos(lat: number, lng: number, apiKey: string) {
+  try {
+    const metadataUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?location=${lat},${lng}&radius=100&source=outdoor&key=${apiKey}`;
+    const metadataResponse = await fetch(metadataUrl);
+    const metadata = await metadataResponse.json();
+
+    if (metadata.status !== 'OK') {
+      return [];
+    }
+
+    const panoId = metadata.pano_id;
+    const streetViewUrl = `https://maps.googleapis.com/maps/api/streetview?size=800x600&pano=${panoId}&key=${apiKey}`;
+
+    return [
+      {
+        id: `streetview_${panoId}`,
+        url: streetViewUrl,
+        caption: metadata.copyright ? `© ${metadata.copyright}` : 'Google Street View',
+        date: new Date().toISOString(),
+        source: 'google_street_view',
+      },
+    ];
+  } catch (error) {
+    console.error('Street View fallback error:', error);
+    return [];
+  }
 }
 

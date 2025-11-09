@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';[]
 
 interface Photo {
   id: string;
@@ -24,6 +25,28 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [loading, setLoading] = useState(true);
   const [placeName, setPlaceName] = useState<string>('');
+  const [missingApiKey, setMissingApiKey] = useState(false);
+  const [usedStreetViewFallback, setUsedStreetViewFallback] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const originalOverflow = document.body.style.overflow;
+    if (selectedPhoto) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = originalOverflow;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [selectedPhoto, isMounted]);
 
   useEffect(() => {
     fetchPhotos();
@@ -31,6 +54,8 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
 
   const fetchPhotos = async () => {
     setLoading(true);
+    setMissingApiKey(false);
+    setUsedStreetViewFallback(false);
     try {
       const response = await fetch('/api/places/photos', {
         method: 'POST',
@@ -43,11 +68,25 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
       }
 
       const data = await response.json();
+
+      if (data.missingApiKey) {
+        setMissingApiKey(true);
+        setPhotos([]);
+        setPlaceName(address);
+        toast.error('Set GOOGLE_API_KEY in your .env.local to enable property photos');
+        return;
+      }
+
       setPhotos(data.photos || []);
       setPlaceName(data.placeName || address);
+      setUsedStreetViewFallback(Boolean(data.streetViewFallback));
       
       if (data.photos && data.photos.length > 0) {
-        toast.success(`Found ${data.photos.length} photo${data.photos.length > 1 ? 's' : ''} from Google Places`);
+        if (data.streetViewFallback) {
+          toast.success('Showing Google Street View preview for this address');
+        } else {
+          toast.success(`Found ${data.photos.length} photo${data.photos.length > 1 ? 's' : ''} from Google Places`);
+        }
       } else {
         toast.info('No photos found for this location');
       }
@@ -63,6 +102,47 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
   const openPhotoViewer = (photo: Photo) => {
     setSelectedPhoto(photo);
   };
+
+  const closePhotoViewer = () => {
+    setSelectedPhoto(null);
+  };
+
+  const modal = selectedPhoto && isMounted
+    ? createPortal(
+        <div
+          className="fixed inset-0 bg-black/90 z-[1000] flex items-center justify-center p-4"
+          onClick={closePhotoViewer}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={closePhotoViewer}
+              className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 text-white rounded-full z-10 transition-all"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={selectedPhoto.url}
+              alt={selectedPhoto.caption || 'Property photo'}
+              className="w-full h-full object-contain rounded-lg bg-black"
+              loading="lazy"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23ddd" width="400" height="400"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
+              }}
+            />
+            {selectedPhoto.caption && (
+              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4 rounded-b-lg">
+                <p className="font-medium mb-1">{selectedPhoto.caption}</p>
+                <p className="text-xs text-gray-300">Source: {selectedPhoto.source === 'google_street_view' ? 'Google Street View' : 'Google Places'}</p>
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )
+    : null;
 
   return (
     <div className="space-y-4">
@@ -111,7 +191,15 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
         </div>
       )}
 
-      {/* Photos Grid */}
+      {!loading && usedStreetViewFallback && photos.length > 0 && (
+        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m0 14v2m4-5l4 4m0 0l4-4m-4 4V11" />
+          </svg>
+          Showing Google Street View preview because dedicated property photos were not available.
+        </div>
+      )}
+
       {!loading && photos.length === 0 && (
         <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full mb-4">
@@ -120,12 +208,20 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
             </svg>
           </div>
           <p className="text-gray-600 text-sm font-medium">No photos available</p>
-          <p className="text-gray-400 text-xs mt-1">
-            Photos from Google Places API will appear here when available
-          </p>
-          <p className="text-gray-400 text-xs mt-2">
-            Make sure GOOGLE_PLACES_API_KEY is set in your environment variables
-          </p>
+          {missingApiKey ? (
+            <p className="text-amber-600 text-xs mt-2 font-medium max-w-xs mx-auto">
+              Add <code className="font-mono">GOOGLE_API_KEY</code> to your <code className="font-mono">.env.local</code> file to enable Google Places and Street View photos.
+            </p>
+          ) : (
+            <>
+              <p className="text-gray-400 text-xs mt-1">
+                Photos from Google Places or Street View will appear here when available
+              </p>
+              <p className="text-gray-400 text-xs mt-2">
+                Try refining the address or clicking refresh
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -160,13 +256,20 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
                       </svg>
                     </button>
                   </div>
-                  {/* Google Places badge */}
                   {photo.source === 'google_places' && (
                     <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 rounded-lg text-xs font-semibold text-gray-700 flex items-center gap-1">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                       </svg>
-                      Google
+                      Google Places
+                    </div>
+                  )}
+                  {photo.source === 'google_street_view' && (
+                    <div className="absolute top-2 left-2 px-2 py-1 bg-white/90 rounded-lg text-xs font-semibold text-gray-700 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
+                      </svg>
+                      Street View
                     </div>
                   )}
                 </div>
@@ -192,38 +295,7 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
       )}
 
       {/* Full-size Photo Viewer Modal */}
-      {selectedPhoto && (
-        <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedPhoto(null)}
-        >
-          <div className="relative max-w-4xl max-h-[90vh] w-full" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setSelectedPhoto(null)}
-              className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 text-white rounded-full z-10 transition-all"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <img
-              src={selectedPhoto.url}
-              alt={selectedPhoto.caption || 'Property photo'}
-              className="w-full h-full object-contain rounded-lg"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23ddd" width="400" height="400"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
-              }}
-            />
-            {selectedPhoto.caption && (
-              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4 rounded-b-lg">
-                <p className="font-medium mb-1">{selectedPhoto.caption}</p>
-                <p className="text-xs text-gray-300">Source: Google Places</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {modal}
     </div>
   );
 }

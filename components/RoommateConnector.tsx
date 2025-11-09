@@ -1,17 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
+import {
+  onAuthStateChanged,
+  signInAnonymously,
+  type User,
+} from 'firebase/auth';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+} from 'firebase/firestore';
 import SharedPropertyList from '@/components/SharedPropertyList';
+import { getFirebaseAuth, getFirebaseDb, isFirebaseConfigured } from '@/lib/firebaseClient';
 
-interface Roommate {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  budget: number;
-  preferences?: string;
-  joinedAt: string;
+interface RoommateMember {
+  uid: string;
+  displayName: string;
+  role?: 'owner' | 'member';
+  joinedAt?: string;
+  lastActive?: string;
 }
 
 interface RoommateConnectorProps {
@@ -20,116 +35,393 @@ interface RoommateConnectorProps {
   onRoommateUpdate?: (count: number) => void;
 }
 
+type PendingAction = 'share' | 'join' | null;
+
+const STORAGE_PREFIX = 'roommate_group_state_';
+
+function generateShareCode(): string {
+  return `BRW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+}
+
+function formatTimestamp(value?: string) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 export default function RoommateConnector({ address, riskScore, onRoommateUpdate }: RoommateConnectorProps) {
-  const [roommates, setRoommates] = useState<Roommate[]>([]);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newRoommate, setNewRoommate] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    budget: 0,
-    preferences: '',
-  });
-  const [shareCode, setShareCode] = useState<string>('');
-  const [joiningCode, setJoiningCode] = useState<string>('');
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [members, setMembers] = useState<RoommateMember[]>([]);
+  const [shareCode, setShareCode] = useState('');
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authDisplayName, setAuthDisplayName] = useState('');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [groupBusy, setGroupBusy] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+
+  const storageKey = `${STORAGE_PREFIX}${address}`;
+
+  if (!isFirebaseConfigured) {
+    return (
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 lg:p-6 hover-lift">
+        <div className="space-y-3 text-sm text-gray-600">
+          <h3 className="text-lg font-semibold text-gray-900">My Roommates</h3>
+          <p>
+            Configure Firebase to enable roommate collaboration. Add your Firebase client keys to
+            <code className="mx-1 px-1 py-0.5 bg-gray-100 rounded text-xs">.env.local</code>:
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><code className="text-xs">NEXT_PUBLIC_FIREBASE_API_KEY</code></li>
+            <li><code className="text-xs">NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN</code></li>
+            <li><code className="text-xs">NEXT_PUBLIC_FIREBASE_PROJECT_ID</code></li>
+            <li><code className="text-xs">NEXT_PUBLIC_FIREBASE_APP_ID</code></li>
+          </ul>
+          <p>Once set, refresh the page to create share codes and invite roommates.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const auth = getFirebaseAuth();
+  const db = getFirebaseDb();
 
   useEffect(() => {
-    // Load roommates from localStorage
-    const saved = localStorage.getItem(`roommates_${address}`);
-    if (saved) {
-      const data = JSON.parse(saved);
-      setRoommates(data.roommates || []);
-      setShareCode(data.shareCode || generateShareCode());
-    } else {
-      setShareCode(generateShareCode());
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setFirebaseUser(user);
+
+      if (!user) {
+        setDisplayName('');
+        setProfileLoading(false);
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data() as { displayName?: string };
+          if (data.displayName) {
+            setDisplayName(data.displayName);
+            setAuthDisplayName(data.displayName);
+          }
+        } else if (user.displayName) {
+          setDisplayName(user.displayName);
+          setAuthDisplayName(user.displayName);
+        }
+      } catch (error) {
+        console.error('Failed to load user profile', error);
+        toast.error('Unable to load your roommate profile.');
+      } finally {
+        setProfileLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth, db]);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { shareCode?: string };
+        if (parsed?.shareCode) {
+          setShareCode(parsed.shareCode);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to restore roommate state', error);
     }
-  }, [address]);
+  }, [storageKey]);
 
-  const generateShareCode = () => {
-    return `BRW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-  };
-
-  const handleAddRoommate = () => {
-    if (!newRoommate.name || !newRoommate.email) {
-      toast.error('Name and email are required');
+  useEffect(() => {
+    if (!shareCode || !firebaseUser) {
+      if (!shareCode) setMembers([]);
       return;
     }
 
-    const roommate: Roommate = {
-      id: Date.now().toString(),
-      name: newRoommate.name,
-      email: newRoommate.email,
-      phone: newRoommate.phone,
-      budget: newRoommate.budget,
-      preferences: newRoommate.preferences,
-      joinedAt: new Date().toISOString(),
-    };
+    localStorage.setItem(storageKey, JSON.stringify({ shareCode }));
 
-    const updated = [...roommates, roommate];
-    setRoommates(updated);
-    saveRoommates(updated);
-    setNewRoommate({ name: '', email: '', phone: '', budget: 0, preferences: '' });
-    setShowAddForm(false);
-    toast.success('Roommate added!');
-    if (onRoommateUpdate) onRoommateUpdate(updated.length);
+    const membersRef = collection(db, 'groups', shareCode, 'members');
+    const membersQuery = query(membersRef, orderBy('joinedAt', 'asc'));
+
+    const unsubscribe = onSnapshot(
+      membersQuery,
+      (snapshot) => {
+        const nextMembers: RoommateMember[] = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data() as any;
+          return {
+            uid: docSnap.id,
+            displayName: data.displayName ?? 'Roommate',
+            role: data.role === 'owner' ? 'owner' : 'member',
+            joinedAt: data.joinedAt?.toDate?.()?.toISOString?.() ?? data.joinedAt,
+            lastActive: data.lastActive?.toDate?.()?.toISOString?.() ?? data.lastActive,
+          };
+        });
+
+        setMembers(nextMembers);
+        setSubscriptionError(null);
+        if (onRoommateUpdate) onRoommateUpdate(nextMembers.length);
+      },
+      (error) => {
+        console.error('Roommate subscription error', error);
+        setSubscriptionError('Unable to sync roommates. Try rejoining or refreshing.');
+      },
+    );
+
+    return () => unsubscribe();
+  }, [db, firebaseUser, onRoommateUpdate, shareCode, storageKey]);
+
+  useEffect(() => {
+    if (!shareCode) {
+      localStorage.removeItem(storageKey);
+    }
+  }, [shareCode, storageKey]);
+
+  const isMember = useMemo(() => {
+    if (!firebaseUser || !shareCode) return false;
+    return members.some((member) => member.uid === firebaseUser.uid);
+  }, [firebaseUser, members, shareCode]);
+
+  const owner = useMemo(
+    () => members.find((member) => member.role === 'owner'),
+    [members],
+  );
+
+  const ensureProfile = (action: PendingAction) => {
+    if (groupBusy) return false;
+    if (firebaseUser && displayName) return true;
+    setPendingAction(action);
+    setAuthDisplayName(displayName);
+    setAuthModalOpen(true);
+    return false;
   };
 
-  const handleJoinWithCode = () => {
-    if (!joiningCode) {
-      toast.error('Please enter a share code');
+  const persistGroupMembership = (code?: string) => {
+    if (!code) {
+      localStorage.removeItem(storageKey);
+      return;
+    }
+    localStorage.setItem(storageKey, JSON.stringify({ shareCode: code }));
+  };
+
+  const ensureGroup = async (user: User, name: string) => {
+    setGroupBusy(true);
+    try {
+      let candidate = shareCode || generateShareCode();
+      let attempts = 0;
+
+      while (attempts < 5) {
+        const groupRef = doc(db, 'groups', candidate);
+        const snapshot = await getDoc(groupRef);
+        if (!snapshot.exists() || snapshot.data()?.ownerUid === user.uid) {
+          break;
+        }
+        candidate = generateShareCode();
+        attempts += 1;
+      }
+
+      const groupRef = doc(db, 'groups', candidate);
+      await setDoc(
+        groupRef,
+        {
+          ownerUid: user.uid,
+          ownerDisplayName: name,
+          address,
+          riskScore,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+
+      await setDoc(
+        doc(db, 'groups', candidate, 'members', user.uid),
+        {
+          displayName: name,
+          role: 'owner',
+          joinedAt: serverTimestamp(),
+          lastActive: serverTimestamp(),
+        },
+        { merge: true },
+      );
+
+      setShareCode(candidate);
+      persistGroupMembership(candidate);
+      return candidate;
+    } catch (error) {
+      console.error('Failed to ensure group', error);
+      toast.error('Unable to prepare a share code right now.');
+      return null;
+    } finally {
+      setGroupBusy(false);
+    }
+  };
+
+  const joinGroup = async (user: User, name: string, code: string) => {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) {
+      toast.error('Enter a share code first.');
       return;
     }
 
-    // In a real app, this would connect to a backend
-    // For now, we'll simulate joining
-    toast.success(`Joining group with code: ${joiningCode}`);
-    // You could implement actual sharing logic here
-  };
+    setGroupBusy(true);
+    try {
+      const groupRef = doc(db, 'groups', trimmed);
+      const groupSnap = await getDoc(groupRef);
 
-  const handleRemoveRoommate = (id: string) => {
-    const updated = roommates.filter(r => r.id !== id);
-    setRoommates(updated);
-    saveRoommates(updated);
-    toast.success('Roommate removed');
-    if (onRoommateUpdate) onRoommateUpdate(updated.length);
-  };
+      if (!groupSnap.exists()) {
+        toast.error('Share code not found.');
+        return;
+      }
 
-  const saveRoommates = (roommateList: Roommate[]) => {
-    const data = {
-      roommates: roommateList,
-      shareCode,
-      address,
-      riskScore,
-      updatedAt: new Date().toISOString(),
-    };
-    localStorage.setItem(`roommates_${address}`, JSON.stringify(data));
+      await setDoc(
+        doc(db, 'groups', trimmed, 'members', user.uid),
+        {
+          displayName: name,
+          role: groupSnap.data()?.ownerUid === user.uid ? 'owner' : 'member',
+          joinedAt: serverTimestamp(),
+          lastActive: serverTimestamp(),
+        },
+        { merge: true },
+      );
+
+      setShareCode(trimmed);
+      setJoinCodeInput('');
+      persistGroupMembership(trimmed);
+      toast.success('Joined group!');
+    } catch (error) {
+      console.error('Failed to join group', error);
+      toast.error('Unable to join this group right now.');
+    } finally {
+      setGroupBusy(false);
+    }
   };
 
   const handleShare = async () => {
-    const shareText = `Join me in evaluating this property on BullsRentWise!\n\nAddress: ${address}\nShare Code: ${shareCode}\n\nUse this code to connect and collaborate!`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'BullsRentWise - Property Evaluation',
-          text: shareText,
-        });
-        toast.success('Shared!');
-      } catch (error) {
-        // User cancelled or error
+    if (groupBusy) return;
+    if (!ensureProfile('share')) return;
+
+    if (!firebaseUser || !displayName) return;
+    const code = await ensureGroup(firebaseUser, displayName);
+    if (!code) return;
+
+    const shareText = `Join me in evaluating this property on BullsRentWise!
+
+Address: ${address}
+Share Code: ${code}
+
+Open BullsRentWise, tap "Join Group", and enter the code to collaborate.`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'BullsRentWise Roommates', text: shareText });
+        toast.success('Link shared!');
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        toast.success('Share text copied to clipboard.');
       }
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(shareText);
-      toast.success('Share code copied to clipboard!');
+    } catch {
+      await navigator.clipboard.writeText(shareText);
+      toast.success('Share text copied to clipboard.');
     }
   };
 
-  const totalBudget = roommates.reduce((sum, r) => sum + r.budget, 0);
-  const avgBudget = roommates.length > 0 ? totalBudget / roommates.length : 0;
+  const handleJoin = async () => {
+    if (groupBusy) return;
+    if (!joinCodeInput.trim()) {
+      toast.error('Please enter a share code.');
+      return;
+    }
+
+    if (!ensureProfile('join')) return;
+    if (!firebaseUser || !displayName) return;
+
+    await joinGroup(firebaseUser, displayName, joinCodeInput);
+  };
+
+  const handleLeave = async () => {
+    if (!firebaseUser || !shareCode) return;
+    setGroupBusy(true);
+
+    try {
+      await deleteDoc(doc(db, 'groups', shareCode, 'members', firebaseUser.uid));
+      toast.success('You left the group.');
+      setShareCode('');
+      setMembers([]);
+      persistGroupMembership(undefined);
+    } catch (error) {
+      console.error('Failed to leave group', error);
+      toast.error('Unable to leave the group.');
+    } finally {
+      setGroupBusy(false);
+    }
+  };
+
+  const handleAuthSubmit = async () => {
+    if (!authDisplayName.trim()) {
+      toast.error('Please enter a display name.');
+      return;
+    }
+
+    setAuthSubmitting(true);
+    const action = pendingAction;
+
+    try {
+      let user = firebaseUser;
+      if (!user) {
+        const credential = await signInAnonymously(auth);
+        user = credential.user;
+        setFirebaseUser(user);
+      }
+
+      if (!user) {
+        toast.error('Sign-in failed. Please try again.');
+        return;
+      }
+
+      await setDoc(
+        doc(db, 'users', user.uid),
+        {
+          displayName: authDisplayName.trim(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+
+      setDisplayName(authDisplayName.trim());
+      toast.success('Profile saved!');
+      setAuthModalOpen(false);
+      setPendingAction(null);
+
+      if (action === 'share') {
+        await handleShare();
+      } else if (action === 'join') {
+        await handleJoin();
+      }
+    } catch (error) {
+      console.error('Authentication flow failed', error);
+      toast.error('Could not complete sign-in. Try again.');
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleAuthCancel = () => {
+    setAuthModalOpen(false);
+    setPendingAction(null);
+  };
+
+  const currentUserMember = useMemo(
+    () => members.find((member) => member.uid === firebaseUser?.uid),
+    [firebaseUser?.uid, members],
+  );
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 lg:p-6 hover-lift">
+    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 lg:p-6 hover-lift relative">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
@@ -137,15 +429,21 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <h3 className="text-lg lg:text-xl font-bold text-gray-900">Roommates</h3>
+          <div>
+            <h3 className="text-lg lg:text-xl font-bold text-gray-900">My Roommates</h3>
+            {owner && (
+              <p className="text-xs text-gray-500">
+                Host: {owner.uid === firebaseUser?.uid ? 'You' : owner.displayName}
+              </p>
+            )}
+          </div>
         </div>
         <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
-          {roommates.length} {roommates.length !== 1 ? 'people' : 'person'}
+          {members.length} {members.length === 1 ? 'person' : 'people'}
         </span>
       </div>
 
       <div className="space-y-4">
-        {/* Share Code Section */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
@@ -156,18 +454,23 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
             </h4>
             <button
               onClick={handleShare}
-              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
+              disabled={groupBusy || profileLoading}
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Share
+              {groupBusy && pendingAction === 'share' ? 'Preparing…' : 'Share'}
             </button>
           </div>
           <div className="flex items-center gap-2">
             <code className="flex-1 px-3 py-2.5 bg-white border-2 border-blue-200 rounded-xl text-sm font-mono font-semibold text-gray-900">
-              {shareCode}
+              {shareCode || 'Tap Share to generate'}
             </code>
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(shareCode);
+              onClick={async () => {
+                if (!shareCode) {
+                  toast.error('Generate a share code first.');
+                  return;
+                }
+                await navigator.clipboard.writeText(shareCode);
                 toast.success('Code copied!');
               }}
               className="px-3 py-2.5 bg-white border-2 border-blue-200 rounded-xl text-sm hover:bg-blue-50 transition-all hover:border-blue-300"
@@ -178,9 +481,13 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
               </svg>
             </button>
           </div>
+          {!isMember && shareCode && (
+            <p className="mt-3 text-xs text-blue-700 bg-blue-100 rounded-lg px-3 py-2">
+              Share this code with roommates. You will see everyone here as soon as they join.
+            </p>
+          )}
         </div>
 
-        {/* Join with Code */}
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border-2 border-gray-200">
           <h4 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
             <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,148 +498,123 @@ export default function RoommateConnector({ address, riskScore, onRoommateUpdate
           <div className="flex gap-2">
             <input
               type="text"
-              value={joiningCode}
-              onChange={(e) => setJoiningCode(e.target.value.toUpperCase())}
+              value={joinCodeInput}
+              onChange={(e) => setJoinCodeInput(e.target.value.toUpperCase())}
               placeholder="Enter code"
               className="flex-1 px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-green-200 focus:border-green-500 transition-all bg-white outline-none"
             />
             <button
-              onClick={handleJoinWithCode}
-              className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg"
+              onClick={handleJoin}
+              disabled={groupBusy}
+              className="px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl text-sm font-semibold hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Join
+              {groupBusy && pendingAction === 'join' ? 'Joining…' : 'Join'}
             </button>
           </div>
+          {!firebaseUser && (
+            <p className="mt-3 text-xs text-gray-600">
+              We only ask you to sign in when you share or join a group. Browsing stays anonymous.
+            </p>
+          )}
         </div>
 
-        {/* Roommates List */}
-        {roommates.length > 0 && (
-          <div className="space-y-3 max-h-48 overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
-            <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
-              <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              Connected ({roommates.length})
-            </h4>
-            {roommates.map((roommate) => (
-              <div
-                key={roommate.id}
-                className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md hover-lift transition-all"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900 text-sm truncate">{roommate.name}</div>
-                  <div className="text-xs text-gray-600 truncate">{roommate.email}</div>
-                  {roommate.budget > 0 && (
-                    <div className="text-xs text-gray-500 mt-0.5">
-                      ${roommate.budget.toFixed(0)}/mo
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => handleRemoveRoommate(roommate.id)}
-                  className="ml-3 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                  title="Remove roommate"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-            {avgBudget > 0 && (
-              <div className="mt-2 pt-2 border-t border-gray-200 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Avg:</span>
-                  <span className="font-semibold">${avgBudget.toFixed(0)}/person</span>
-                </div>
-                <div className="flex justify-between mt-0.5">
-                  <span className="text-gray-600">Total:</span>
-                  <span className="font-semibold">${totalBudget.toFixed(0)}/mo</span>
-                </div>
-              </div>
-            )}
+        {subscriptionError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            {subscriptionError}
           </div>
         )}
 
-        {/* Add Roommate Form */}
-        {showAddForm ? (
-          <div className="border-2 border-gray-200 rounded-xl p-4 space-y-3 bg-gradient-to-br from-gray-50 to-white">
-            <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        {members.length > 0 ? (
+          <div className="space-y-3 max-h-52 overflow-y-auto scroll-smooth">
+            <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2 sticky top-0 bg-white/90 backdrop-blur-sm py-1">
+              <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              Add Roommate
+              Collaborators ({members.length})
             </h4>
+            {members.map((member) => (
+              <div
+                key={member.uid}
+                className="flex items-center justify-between p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md hover-lift transition-all"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-purple-500/20 text-purple-700 font-semibold flex items-center justify-center shrink-0 uppercase">
+                    {member.displayName.slice(0, 2)}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900 text-sm truncate">
+                      {member.uid === firebaseUser?.uid ? 'You' : member.displayName}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {member.role === 'owner' ? 'Host' : 'Member'}
+                      {member.lastActive && ` • active ${formatTimestamp(member.lastActive)}`}
+                    </div>
+                  </div>
+                </div>
+                {member.uid === firebaseUser?.uid && (
+                  <button
+                    onClick={handleLeave}
+                    disabled={groupBusy}
+                    className="ml-3 px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Leave
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border border-dashed border-gray-200 rounded-xl px-4 py-6 text-center text-sm text-gray-500">
+            Share your code so roommates can collaborate with you.
+          </div>
+        )}
+      </div>
+
+      {shareCode && isMember && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <SharedPropertyList
+            shareCode={shareCode}
+            currentUserId={firebaseUser?.uid ?? 'anon'}
+            currentUserName={displayName || currentUserMember?.displayName || 'You'}
+          />
+        </div>
+      )}
+
+      {authModalOpen && (
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm rounded-2xl flex items-center justify-center p-4 z-20">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <h4 className="text-lg font-semibold text-gray-900">Let roommates know who you are</h4>
+            <p className="text-sm text-gray-600">
+              We only need a display name to show in the roommate list.
+            </p>
             <input
               type="text"
-              value={newRoommate.name}
-              onChange={(e) => setNewRoommate({ ...newRoommate, name: e.target.value })}
-              placeholder="Name"
+              value={authDisplayName}
+              onChange={(e) => setAuthDisplayName(e.target.value)}
+              placeholder="Display name"
               className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
             />
-            <input
-              type="email"
-              value={newRoommate.email}
-              onChange={(e) => setNewRoommate({ ...newRoommate, email: e.target.value })}
-              placeholder="Email"
-              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                type="tel"
-                value={newRoommate.phone}
-                onChange={(e) => setNewRoommate({ ...newRoommate, phone: e.target.value })}
-                placeholder="Phone"
-                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
-              />
-              <input
-                type="number"
-                value={newRoommate.budget || ''}
-                onChange={(e) => setNewRoommate({ ...newRoommate, budget: parseFloat(e.target.value) || 0 })}
-                placeholder="Budget $"
-                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
-              />
-            </div>
             <div className="flex gap-2">
               <button
-                onClick={handleAddRoommate}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
+                onClick={handleAuthSubmit}
+                disabled={authSubmitting}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Add
+                {authSubmitting ? 'Saving…' : 'Continue'}
               </button>
               <button
-                onClick={() => {
-                  setShowAddForm(false);
-                  setNewRoommate({ name: '', email: '', phone: '', budget: 0, preferences: '' });
-                }}
-                className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-300 transition-all"
+                onClick={handleAuthCancel}
+                disabled={authSubmitting}
+                className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-300 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
             </div>
           </div>
-        ) : (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add Roommate
-          </button>
-        )}
-      </div>
-
-      {shareCode && roommates.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <SharedPropertyList
-            shareCode={shareCode}
-            currentUserId="You" // In real app, this would be actual user ID
-          />
         </div>
       )}
     </div>
   );
 }
+
 
