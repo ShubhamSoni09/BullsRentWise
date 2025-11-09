@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 
       if (data.length > 0) {
         // Process and filter complaints
-        complaints = data
+        const complaints = data
           .map((complaint: any) => {
             // Extract coordinates from OData response
             // OData has: latitude, longitude, and location (GeoJSON Point)
