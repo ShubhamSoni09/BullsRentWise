@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
   const normalizedCode = shareCode.trim().toUpperCase();
 
   try {
-    const { data, error } = await supabase!
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    }
+
+    const { data, error } = await supabase
       .from('roommate_groups')
       .select('*')
       .eq('share_code', normalizedCode)
@@ -54,7 +58,11 @@ export async function POST(request: NextRequest) {
 
     const normalizedCode = shareCode.trim().toUpperCase();
 
-    const { data, error } = await supabase!
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    }
+
+    const { data, error } = await supabase
       .from('roommate_groups')
       .upsert({
         share_code: normalizedCode,
@@ -101,8 +109,12 @@ export async function PUT(request: NextRequest) {
 
     const normalizedCode = shareCode.trim().toUpperCase();
 
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    }
+
     // Get existing group
-    const { data: existingGroup, error: fetchError } = await supabase!
+    const { data: existingGroup, error: fetchError } = await supabase
       .from('roommate_groups')
       .select('*')
       .eq('share_code', normalizedCode)
@@ -135,7 +147,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update group
-    const { data, error } = await supabase!
+    const { data, error } = await supabase
       .from('roommate_groups')
       .update({
         roommates: updatedRoommates,
@@ -181,8 +193,12 @@ export async function DELETE(request: NextRequest) {
 
     const normalizedCode = shareCode.trim().toUpperCase();
 
+    if (!supabase) {
+      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    }
+
     // Get existing group
-    const { data: existingGroup, error: fetchError } = await supabase!
+    const { data: existingGroup, error: fetchError } = await supabase
       .from('roommate_groups')
       .select('*')
       .eq('share_code', normalizedCode)
@@ -195,7 +211,7 @@ export async function DELETE(request: NextRequest) {
     const updatedRoommates = (existingGroup.roommates || []).filter((r: any) => r.id !== roommateId);
 
     // Update group
-    const { data, error } = await supabase!
+    const { data, error } = await supabase
       .from('roommate_groups')
       .update({
         roommates: updatedRoommates,
