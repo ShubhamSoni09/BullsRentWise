@@ -16,7 +16,7 @@ const UserPreferences = dynamic(() => import('@/components/UserPreferences'), {
   ssr: false,
 });
 
-const PropertyDiscovery = dynamic(() => import('@/components/PropertyDiscovery'), {
+const WelcomeSection = dynamic(() => import('@/components/WelcomeSection'), {
   ssr: false,
 });
 
@@ -37,7 +37,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>('');
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
-  const [discoveredProperties, setDiscoveredProperties] = useState<any[]>([]);
 
   const handleAddressSubmit = async (address: string) => {
     setLoading(true);
@@ -178,16 +177,16 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      {/* Decorative background elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
+    <main className={`bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 ${riskData ? 'min-h-screen' : 'h-screen overflow-hidden'}`}>
+        {/* Decorative background elements */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
+        </div>
 
-      <div className="relative max-w-7xl mx-auto p-4 lg:p-6 overflow-x-hidden">
+      <div className={`relative max-w-7xl mx-auto p-4 lg:p-6 overflow-x-hidden ${riskData ? '' : 'h-full flex flex-col'}`}>
         {/* Enhanced Header */}
-        <div className="text-center mb-6 lg:mb-8 animate-fadeIn">
+        <div className={`text-center ${riskData ? 'mb-6 lg:mb-8' : 'mb-4 lg:mb-6 shrink-0'} animate-fadeIn`}>
           <div className="inline-block mb-3">
             <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 mb-2">
               <span className="inline-block transform hover:scale-105 transition-transform duration-300">
@@ -199,19 +198,24 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-base lg:text-lg text-gray-700 font-medium max-w-2xl mx-auto">
-            UB Student Rental Risk Checker
+            UB Student Rental Assistant
           </p>
-          <p className="text-sm lg:text-base text-gray-600 mt-2 max-w-xl mx-auto">
-            Scan Buffalo addresses for 311 complaints, weather risks, and crime data
+          <p className="text-sm lg:text-base text-gray-600 mt-2 max-w-5xl mx-auto whitespace-nowrap">
+            Analyze Buffalo rentals: risk scores, commute times, nearby amenities, and AI-powered recommendations
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 ${riskData ? '' : 'flex-1 min-h-0 overflow-hidden'}`}>
           {/* Main Content - Scrollable */}
-          <div className="lg:col-span-8 space-y-4 lg:space-y-6">
+          <div className={`lg:col-span-8 space-y-4 lg:space-y-6 ${riskData ? '' : 'flex flex-col min-h-0 overflow-hidden'}`}>
             <div className="animate-fadeIn" style={{ animationDelay: '0.1s' }}>
               <AddressInput onSubmit={handleAddressSubmit} loading={loading} loadingStep={loadingStep} />
             </div>
+            {!riskData && !loading && (
+              <div className="animate-fadeIn" style={{ animationDelay: '0.15s' }}>
+                <WelcomeSection />
+              </div>
+            )}
             {loading && (
               <div className="animate-fadeIn">
                 <SkeletonLoader />
@@ -225,29 +229,24 @@ export default function Home() {
           </div>
           
           {/* Sidebar - Fixed Height, Scrollable */}
-          <div className="lg:col-span-4">
-            <div className="sticky top-4 space-y-3 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
+          <div className={`lg:col-span-4 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
+            <div className={`${riskData ? 'sticky top-4' : 'sticky top-4'} space-y-3 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth`} style={{ scrollBehavior: 'smooth' }}>
               <div className="animate-slideIn" style={{ animationDelay: '0.2s' }}>
                 <UserPreferences />
               </div>
               <div className="animate-slideIn" style={{ animationDelay: '0.25s' }}>
-                <PropertyDiscovery 
-                  onPropertiesChange={(properties) => setDiscoveredProperties(properties)}
-                />
-              </div>
-              <div className="animate-slideIn" style={{ animationDelay: '0.3s' }}>
                 <SavedAddresses 
                   onAddressSaved={() => {}} 
                   onAddressesChange={(addresses) => setSavedAddresses(addresses)}
                 />
               </div>
-              <div className="animate-slideIn" style={{ animationDelay: '0.35s' }}>
+              <div className="animate-slideIn" style={{ animationDelay: '0.3s' }}>
                 <RoommatesManager />
               </div>
-              <div className="animate-slideIn" style={{ animationDelay: '0.4s' }}>
+              <div className="animate-slideIn" style={{ animationDelay: '0.35s' }}>
                 <AIRecommendations 
                   savedAddresses={savedAddresses} 
-                  discoveredProperties={discoveredProperties}
+                  discoveredProperties={[]}
                 />
               </div>
             </div>

@@ -26,6 +26,7 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<any>(null);
   const [showDetails, setShowDetails] = useState<{ [key: string]: boolean }>({});
+  const [savedRecommendations, setSavedRecommendations] = useState<Set<string>>(new Set());
 
   const fetchRecommendations = async () => {
     // Load user preferences
@@ -177,6 +178,66 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
     setShowDetails(prev => ({ ...prev, [address]: !prev[address] }));
   };
 
+  useEffect(() => {
+    // Check which recommendations are already saved
+    const saved = localStorage.getItem('savedAddresses');
+    if (saved) {
+      const savedAddressesList = JSON.parse(saved);
+      const savedSet = new Set(savedAddressesList.map((addr: any) => addr.address));
+      setSavedRecommendations(savedSet);
+    }
+  }, [recommendations]);
+
+  const handleSaveRecommendation = async (rec: Recommendation) => {
+    // Check if already saved
+    if (savedRecommendations.has(rec.address)) {
+      toast.error('Address already saved');
+      return;
+    }
+
+    try {
+      // Geocode address to get lat/lng
+      toast.loading('Saving recommendation...', { id: 'saving' });
+      const geocodeRes = await fetch('/api/geocode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: rec.address }),
+      });
+
+      if (!geocodeRes.ok) {
+        throw new Error('Failed to geocode address');
+      }
+
+      const { lat, lng } = await geocodeRes.json();
+
+      // Save to localStorage
+      const saved = localStorage.getItem('savedAddresses');
+      const savedAddressesList = saved ? JSON.parse(saved) : [];
+
+      const newAddress = {
+        id: Date.now().toString(),
+        address: rec.address,
+        riskScore: rec.riskScore,
+        lat,
+        lng,
+        date: new Date().toISOString(),
+        source: 'ai_recommendation',
+      };
+
+      const updated = [...savedAddressesList, newAddress];
+      localStorage.setItem('savedAddresses', JSON.stringify(updated));
+      setSavedRecommendations(prev => new Set(prev).add(rec.address));
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new Event('addressSaved'));
+      
+      toast.success('Recommendation saved!', { id: 'saving' });
+    } catch (error: any) {
+      console.error('Error saving recommendation:', error);
+      toast.error(error.message || 'Failed to save recommendation', { id: 'saving' });
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-xl border border-indigo-100 p-4 overflow-hidden hover-lift">
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
@@ -269,6 +330,19 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
                       #{idx + 1}
                     </span>
                     <h3 className="font-bold text-gray-900 text-sm lg:text-base flex-1 min-w-0 truncate">{rec.address}</h3>
+                    <button
+                      onClick={() => handleSaveRecommendation(rec)}
+                      className={`p-1.5 rounded-lg transition-all shrink-0 ${
+                        savedRecommendations.has(rec.address)
+                          ? 'text-yellow-500 bg-yellow-50 hover:bg-yellow-100'
+                          : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'
+                      }`}
+                      title={savedRecommendations.has(rec.address) ? 'Saved' : 'Save to addresses'}
+                    >
+                      <svg className="w-5 h-5" fill={savedRecommendations.has(rec.address) ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    </button>
                     {rec.estimatedCost && rec.estimatedCost <= 800 && (
                       <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-lg text-xs font-semibold shrink-0">
                         💰 Great Value

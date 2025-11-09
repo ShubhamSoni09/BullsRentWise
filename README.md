@@ -9,6 +9,7 @@ BullsRentWise helps UB students quickly scan a Buffalo rental address for:
 - **Weather Risk**: Short-term humidity/precipitation data to flag potential mold/water issues
 - **Crime Data**: Recent crime incidents (violent, property, drug, vandalism) within 800m radius
 - **AI-Powered Analysis**: NLP complaint analysis, ML risk predictions, and AI chatbot assistant
+- **Property Photos**: Google Places API integration for property photos
 - **Budget Tracking**: Track rent, utilities, and affordability per person
 - **Roommate Connection**: Connect with roommates, share properties, vote and comment
 - **Risk Score**: 0-100 risk assessment with visual map and red flags
@@ -29,6 +30,7 @@ BullsRentWise helps UB students quickly scan a Buffalo rental address for:
 - **Crime Data**: Buffalo Open Data Portal (Socrata SODA API) - requires dataset ID
 - **Weather API**: National Weather Service (NWS) - free, no key needed
 - **AI/ML**: OpenAI GPT-3.5-turbo (optional, for enhanced features)
+- **Google Places API**: For property photos (optional)
 - **Storage**: localStorage (local) + Supabase (optional cloud)
 
 ### Why Next.js API Routes?
@@ -69,6 +71,12 @@ BUFFALO_API_TOKEN=your_token_here
 # Optional: For AI features (OpenAI API)
 # Get your key at https://platform.openai.com/api-keys
 OPENAI_API_KEY=sk-your-openai-key-here
+
+# Optional: For Google APIs (Places, Maps, Geocoding, etc.)
+# Get your key at https://console.cloud.google.com/apis/credentials
+# Enable the APIs you need: "Places API", "Maps JavaScript API", "Geocoding API", etc.
+# One API key works for all Google services!
+GOOGLE_API_KEY=your-google-api-key-here
 
 # Optional: For Supabase cloud storage
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url

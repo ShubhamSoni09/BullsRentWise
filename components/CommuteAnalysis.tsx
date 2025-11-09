@@ -261,20 +261,29 @@ export default function CommuteAnalysis({ lat, lng, address }: CommuteAnalysisPr
             <div className="space-y-2">
               {data.transitRoutes.map((route, idx) => (
                 <div key={idx} className="bg-white rounded-lg p-2 border border-orange-100">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-gray-900 text-xs">{route.name}</span>
                     <span className="text-xs text-gray-500">{route.type}</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-gray-600">{route.distance} mi to stop</span>
-                    <span className="text-gray-600">{route.frequency}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-orange-700 bg-orange-50 px-2 py-1 rounded">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Destination: UB {route.toCampus} Campus</span>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 font-medium">Stop:</span>
+                      <span className="text-gray-900 font-semibold">{route.distance} mi away</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 font-medium">Frequency:</span>
+                      <span className="text-gray-900 font-semibold">{route.frequency}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-orange-100">
+                      <span className="text-gray-600 font-medium">Destination:</span>
+                      <div className="flex items-center gap-1 text-orange-700 font-semibold">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>UB {route.toCampus} Campus</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
