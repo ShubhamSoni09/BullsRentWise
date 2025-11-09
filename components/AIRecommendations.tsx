@@ -277,7 +277,7 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
         <div className="text-center py-4">
           <p className="text-gray-600 text-sm font-medium mb-1">🔍 AI Property Search</p>
           <p className="text-gray-500 text-xs">
-            Click "Get Recommendations" to search online properties matching your preferences
+            Click &quot;Get Recommendations&quot; to search online properties matching your preferences
           </p>
         </div>
       )}
@@ -505,7 +505,7 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
               </svg>
             </div>
             <p className="text-gray-600 text-sm font-medium">Ready for AI recommendations</p>
-            <p className="text-gray-400 text-xs mt-1">Click "Get Recommendations" to analyze all available properties</p>
+            <p className="text-gray-400 text-xs mt-1">Click &quot;Get Recommendations&quot; to analyze all available properties</p>
           </div>
         )}
     </div>
