@@ -92,7 +92,7 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
             toast.success(`Found ${data.photos.length} photo${data.photos.length > 1 ? 's' : ''} from Google Places`);
           }
         } else {
-          toast.info('No photos found for this location');
+          toast('No photos found for this location', { icon: 'ℹ️' });
         }
         hasShownToastRef.current = true;
       }
