@@ -239,7 +239,7 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
   };
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-xl border border-indigo-100 p-4 overflow-hidden hover-lift">
+    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg shadow-md border border-indigo-100/50 p-3 overflow-hidden hover-lift">
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
@@ -315,7 +315,7 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
             renderItem={(rec, idx) => (
               <div
                 key={rec.address}
-                className={`bg-white/90 rounded-lg p-3 border-2 transition-all shadow-md hover:shadow-xl overflow-hidden hover-lift animate-slideUp mb-3 ${
+                className={`bg-white/90 rounded-lg p-2.5 border transition-all shadow-sm hover:shadow-md overflow-hidden hover-lift animate-slideUp mb-3 ${
                 rec.suitability === 'excellent' ? 'border-green-300 hover:border-green-500 hover:ring-2 hover:ring-green-200' :
                 rec.suitability === 'good' ? 'border-blue-300 hover:border-blue-500 hover:ring-2 hover:ring-blue-200' :
                 rec.suitability === 'fair' ? 'border-yellow-300 hover:border-yellow-500 hover:ring-2 hover:ring-yellow-200' :

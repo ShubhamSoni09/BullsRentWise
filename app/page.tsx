@@ -184,7 +184,7 @@ export default function Home() {
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
         </div>
 
-      <div className={`relative max-w-7xl mx-auto p-4 lg:p-6 overflow-x-hidden ${riskData ? '' : 'h-full flex flex-col'}`}>
+        <div className={`relative max-w-[98%] mx-auto p-2 lg:p-4 overflow-x-hidden ${riskData ? '' : 'h-full flex flex-col'}`}>
         {/* Enhanced Header */}
         <div className={`text-center ${riskData ? 'mb-6 lg:mb-8' : 'mb-4 lg:mb-6 shrink-0'} animate-fadeIn`}>
           <div className="inline-block mb-3">
@@ -205,9 +205,24 @@ export default function Home() {
           </p>
         </div>
 
-        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 ${riskData ? '' : 'flex-1 min-h-0 overflow-hidden'}`}>
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-0 ${riskData ? '' : 'flex-1 min-h-0 overflow-hidden'}`}>
+          {/* Left Sidebar - Saved Addresses & Roommates */}
+          <div className={`lg:col-span-3 border-r border-gray-300 pr-4 lg:pr-6 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
+            <div className={`sticky top-4 space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth`} style={{ scrollBehavior: 'smooth' }}>
+              <div className="animate-slideIn" style={{ animationDelay: '0.2s' }}>
+                <SavedAddresses 
+                  onAddressSaved={() => {}} 
+                  onAddressesChange={(addresses) => setSavedAddresses(addresses)}
+                />
+              </div>
+              <div className="animate-slideIn" style={{ animationDelay: '0.25s' }}>
+                <RoommatesManager />
+              </div>
+            </div>
+          </div>
+
           {/* Main Content - Scrollable */}
-          <div className={`lg:col-span-8 space-y-4 lg:space-y-6 ${riskData ? '' : 'flex flex-col min-h-0 overflow-hidden'}`}>
+          <div className={`lg:col-span-6 space-y-4 lg:space-y-6 border-x border-gray-300 px-4 lg:px-6 ${riskData ? '' : 'flex flex-col min-h-0 overflow-hidden'}`}>
             <div className="animate-fadeIn" style={{ animationDelay: '0.1s' }}>
               <AddressInput onSubmit={handleAddressSubmit} loading={loading} loadingStep={loadingStep} />
             </div>
@@ -228,20 +243,11 @@ export default function Home() {
             )}
           </div>
           
-          {/* Sidebar - Fixed Height, Scrollable */}
-          <div className={`lg:col-span-4 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
-            <div className={`${riskData ? 'sticky top-4' : 'sticky top-4'} space-y-3 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth`} style={{ scrollBehavior: 'smooth' }}>
-              <div className="animate-slideIn" style={{ animationDelay: '0.2s' }}>
-                <UserPreferences />
-              </div>
-              <div className="animate-slideIn" style={{ animationDelay: '0.25s' }}>
-                <SavedAddresses 
-                  onAddressSaved={() => {}} 
-                  onAddressesChange={(addresses) => setSavedAddresses(addresses)}
-                />
-              </div>
+          {/* Right Sidebar - Preferences & AI Recommendations */}
+          <div className={`lg:col-span-3 border-l border-gray-300 pl-4 lg:pl-6 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
+            <div className={`sticky top-4 space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth`} style={{ scrollBehavior: 'smooth' }}>
               <div className="animate-slideIn" style={{ animationDelay: '0.3s' }}>
-                <RoommatesManager />
+                <UserPreferences />
               </div>
               <div className="animate-slideIn" style={{ animationDelay: '0.35s' }}>
                 <AIRecommendations 

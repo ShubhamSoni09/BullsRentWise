@@ -112,7 +112,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
   ];
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-4 overflow-hidden hover-lift">
+    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 p-3 overflow-hidden hover-lift">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
@@ -153,7 +153,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
           </button>
           {!isCollapsed && (
             <div className="space-y-2 pt-2">
-              <div className="flex items-center justify-between p-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100">
+              <div className="flex items-center justify-between p-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100/50">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

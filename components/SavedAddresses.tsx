@@ -74,7 +74,7 @@ export default function SavedAddresses({ onAddressSaved, onAddressesChange }: Sa
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-4 overflow-hidden hover-lift">
+    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 p-3 overflow-hidden hover-lift">
       <div className="flex items-center gap-2 mb-3">
         <div className="p-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg">
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +111,7 @@ export default function SavedAddresses({ onAddressSaved, onAddressesChange }: Sa
             return (
             <li
               key={addr.id}
-              className="flex justify-between items-start p-3 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-lg hover-lift transition-all duration-300 hover:border-blue-400 gap-2 cursor-pointer"
+              className="flex justify-between items-start p-2 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200/50 hover:shadow-md hover-lift transition-all duration-300 hover:border-blue-400 gap-2 cursor-pointer"
             >
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="text-sm font-semibold text-gray-900 truncate">{addr.address}</p>

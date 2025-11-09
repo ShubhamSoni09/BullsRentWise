@@ -117,7 +117,7 @@ export default function RoommatesManager() {
   const avgBudget = roommates.length > 0 ? totalBudget / roommates.length : 0;
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-4 hover-lift">
+    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 p-3 hover-lift">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
