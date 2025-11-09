@@ -212,14 +212,14 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
       {isOpen && (
         <div className="space-y-4 animate-fadeIn">
           {/* Budget Section */}
-          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 overflow-hidden">
             <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Budget
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Max Monthly Budget</label>
                 <div className="flex items-center gap-1">
@@ -228,14 +228,20 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                     type="number"
                     value={preferences.maxMonthlyBudget || ''}
                     onChange={(e) => setPreferences({ ...preferences, maxMonthlyBudget: parseFloat(e.target.value) || 0 })}
-                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-400"
-                    style={{ WebkitTextFillColor: '#111827' }}
+                    className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-400"
+                    style={{ 
+                      WebkitTextFillColor: '#111827',
+                      color: '#111827',
+                      WebkitOpacity: 1,
+                      opacity: 1
+                    }}
                   />
                 </div>
               </div>
-              <div>
+              <div className="min-w-0 overflow-hidden">
                 <label className="block text-xs font-medium text-gray-700 mb-1">Preferred Rent Range</label>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500 text-sm">$</span>
                   <input
                     type="number"
                     value={preferences.preferredRentRange.min || ''}
@@ -244,10 +250,19 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                       preferredRentRange: { ...preferences.preferredRentRange, min: parseFloat(e.target.value) || 0 }
                     })}
                     placeholder="Min"
-                    className="w-28 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 placeholder-gray-400"
-                    style={{ WebkitTextFillColor: '#111827' }}
+                    className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 placeholder-gray-400"
+                    style={{ 
+                      WebkitTextFillColor: '#111827',
+                      color: '#111827',
+                      WebkitOpacity: 1,
+                      opacity: 1,
+                      width: '65px', 
+                      minWidth: '65px', 
+                      maxWidth: '65px' 
+                    }}
                   />
-                  <span className="text-gray-500 text-sm font-medium px-1">to</span>
+                  <span className="text-gray-500 text-xs whitespace-nowrap px-0.5">to</span>
+                  <span className="text-gray-500 text-sm">$</span>
                   <input
                     type="number"
                     value={preferences.preferredRentRange.max || ''}
@@ -256,8 +271,16 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                       preferredRentRange: { ...preferences.preferredRentRange, max: parseFloat(e.target.value) || 0 }
                     })}
                     placeholder="Max"
-                    className="w-28 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 placeholder-gray-400"
-                    style={{ WebkitTextFillColor: '#111827' }}
+                    className="px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 placeholder-gray-400"
+                    style={{ 
+                      WebkitTextFillColor: '#111827',
+                      color: '#111827',
+                      WebkitOpacity: 1,
+                      opacity: 1,
+                      width: '65px', 
+                      minWidth: '65px', 
+                      maxWidth: '65px' 
+                    }}
                   />
                 </div>
               </div>
