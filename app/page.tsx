@@ -28,6 +28,10 @@ const AIRecommendations = dynamic(() => import('@/components/AIRecommendations')
   ssr: false,
 });
 
+const RoommatesManager = dynamic(() => import('@/components/RoommatesManager'), {
+  ssr: false,
+});
+
 export default function Home() {
   const [riskData, setRiskData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -222,7 +226,7 @@ export default function Home() {
           
           {/* Sidebar - Fixed Height, Scrollable */}
           <div className="lg:col-span-4">
-            <div className="sticky top-4 space-y-4 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
+            <div className="sticky top-4 space-y-3 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
               <div className="animate-slideIn" style={{ animationDelay: '0.2s' }}>
                 <UserPreferences />
               </div>
@@ -236,6 +240,9 @@ export default function Home() {
                   onAddressSaved={() => {}} 
                   onAddressesChange={(addresses) => setSavedAddresses(addresses)}
                 />
+              </div>
+              <div className="animate-slideIn" style={{ animationDelay: '0.35s' }}>
+                <RoommatesManager />
               </div>
               <div className="animate-slideIn" style={{ animationDelay: '0.4s' }}>
                 <AIRecommendations 

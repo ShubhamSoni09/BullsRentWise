@@ -178,15 +178,15 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
   };
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-xl border border-indigo-100 p-5 lg:p-6 overflow-hidden hover-lift">
-      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow-xl border border-indigo-100 p-4 overflow-hidden hover-lift">
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v2a2 2 0 01-2-2v-.469c0-.621-.251-1.217-.688-1.653l-.548-.547z" />
             </svg>
           </div>
-          <h2 className="text-lg lg:text-xl font-bold text-gray-900 truncate">AI Recommendations</h2>
+            <h2 className="text-base font-bold text-gray-900 truncate">AI Recommendations</h2>
         </div>
         <button
           onClick={fetchRecommendations}
@@ -221,9 +221,9 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
         </div>
       )}
 
-      {summary && (
-        <div className="mb-4 p-4 bg-white/80 rounded-lg border border-indigo-200">
-          <h3 className="font-semibold text-gray-900 text-sm mb-2">Summary</h3>
+        {summary && (
+          <div className="mb-3 p-3 bg-white/80 rounded-lg border border-indigo-200">
+            <h3 className="font-semibold text-gray-900 text-xs mb-2">Summary</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div>
               <div className="text-gray-600">Total Properties</div>
@@ -248,13 +248,13 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
         </div>
       )}
 
-      {recommendations.length > 0 && (
-        <LazyList
-          items={recommendations}
-          renderItem={(rec, idx) => (
-            <div
-              key={rec.address}
-              className={`bg-white/90 rounded-xl p-4 border-2 transition-all shadow-md hover:shadow-2xl overflow-hidden hover-lift animate-slideUp ${
+        {recommendations.length > 0 && (
+          <LazyList
+            items={recommendations}
+            renderItem={(rec, idx) => (
+              <div
+                key={rec.address}
+                className={`bg-white/90 rounded-lg p-3 border-2 transition-all shadow-md hover:shadow-xl overflow-hidden hover-lift animate-slideUp mb-3 ${
                 rec.suitability === 'excellent' ? 'border-green-300 hover:border-green-500 hover:ring-2 hover:ring-green-200' :
                 rec.suitability === 'good' ? 'border-blue-300 hover:border-blue-500 hover:ring-2 hover:ring-blue-200' :
                 rec.suitability === 'fair' ? 'border-yellow-300 hover:border-yellow-500 hover:ring-2 hover:ring-yellow-200' :
@@ -417,9 +417,9 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
               </div>
             </div>
           )}
-          initialCount={3}
-          increment={3}
-          className="space-y-4"
+          initialCount={2}
+          increment={2}
+          className="space-y-2"
         />
       )}
 

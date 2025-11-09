@@ -192,15 +192,15 @@ export default function PropertyDiscovery({ onPropertyAnalyzed, onPropertiesChan
   const hasMore = discoveredProperties.length > 5;
 
   return (
-    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl shadow-xl border border-emerald-100 p-5 lg:p-6 overflow-hidden hover-lift">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl shadow-xl border border-emerald-100 p-4 overflow-hidden hover-lift">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <h2 className="text-lg lg:text-xl font-bold text-gray-900">Discover Properties</h2>
+          <h2 className="text-base font-bold text-gray-900">Discover Properties</h2>
           {discoveredProperties.length > 0 && (
             <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">
               {discoveredProperties.length}
@@ -210,7 +210,7 @@ export default function PropertyDiscovery({ onPropertyAnalyzed, onPropertiesChan
       </div>
 
       {/* Search Input */}
-      <div className="mb-4">
+      <div className="mb-3">
         <div className="flex gap-2">
           <input
             type="text"
@@ -236,15 +236,15 @@ export default function PropertyDiscovery({ onPropertyAnalyzed, onPropertiesChan
       </div>
 
       {/* Properties List */}
-      {discoveredProperties.length === 0 ? (
-        <div className="text-center py-12 animate-fadeIn">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full mb-4">
-            <svg className="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <p className="text-gray-600 text-sm font-medium">No properties discovered yet</p>
-          <p className="text-gray-400 text-xs mt-1">Search for addresses to discover properties</p>
+        {discoveredProperties.length === 0 ? (
+          <div className="text-center py-6 animate-fadeIn">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full mb-2">
+              <svg className="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <p className="text-gray-600 text-xs font-medium">No properties yet</p>
+            <p className="text-gray-400 text-xs mt-0.5">Search to discover</p>
         </div>
       ) : (
         <LazyList

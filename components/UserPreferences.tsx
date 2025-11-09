@@ -64,6 +64,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [isOpen, setIsOpen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   useEffect(() => {
     // Load saved preferences
@@ -111,15 +112,15 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
   ];
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 lg:p-6 overflow-hidden hover-lift">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-4 overflow-hidden hover-lift">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h2 className="text-lg lg:text-xl font-bold text-gray-900">My Preferences</h2>
+          <h2 className="text-base font-bold text-gray-900">My Preferences</h2>
         </div>
         <div className="flex items-center gap-2">
           {saved && (
@@ -140,8 +141,19 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
       </div>
 
       {!isOpen && saved && (
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100">
+        <div className="space-y-2 text-xs">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="w-full text-left flex items-center justify-between text-gray-600 hover:text-gray-900 transition-colors p-2 rounded-lg hover:bg-gray-50"
+          >
+            <span className="font-medium">View Preferences</span>
+            <svg className={`w-4 h-4 transition-transform ${isCollapsed ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {!isCollapsed && (
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between p-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -150,7 +162,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
             </div>
             <span className="font-bold text-indigo-700">${preferences.maxMonthlyBudget}/mo</span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100">
+          <div className="flex items-center justify-between p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -165,7 +177,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
               {preferences.riskTolerance}
             </span>
           </div>
-          <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-100">
+          <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-100">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -176,7 +188,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
             <span className="font-bold text-blue-700">{preferences.maxDistanceToUB} miles</span>
           </div>
           {preferences.mustHaveFeatures.length > 0 && (
-            <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-100">
+            <div className="p-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-100">
               <div className="flex items-center gap-2 mb-1">
                 <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -190,6 +202,8 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                   </span>
                 ))}
               </div>
+            </div>
+          )}
             </div>
           )}
         </div>
