@@ -219,7 +219,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
               </svg>
               Budget
             </h3>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Max Monthly Budget</label>
                 <div className="flex items-center gap-1">
@@ -237,7 +237,7 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
                   />
                 </div>
               </div>
-              <div className="min-w-0 overflow-hidden">
+              <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Preferred Rent Range</label>
                 <div className="flex items-center gap-1">
                   <span className="text-gray-500 text-sm">$</span>

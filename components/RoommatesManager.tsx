@@ -401,14 +401,16 @@ export default function RoommatesManager() {
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               placeholder="Your Name (optional)"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none text-gray-900 placeholder-gray-400"
+              style={{ WebkitTextFillColor: '#111827', color: '#111827', opacity: 1 }}
             />
             <input
               type="email"
               value={userEmail}
               onChange={(e) => setUserEmail(e.target.value)}
               placeholder="Your Email *"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none text-gray-900 placeholder-gray-400"
+              style={{ WebkitTextFillColor: '#111827', color: '#111827', opacity: 1 }}
             />
             <button
               onClick={handleEmailSubmit}
@@ -520,7 +522,8 @@ export default function RoommatesManager() {
               value={joiningCode}
               onChange={(e) => setJoiningCode(e.target.value.toUpperCase())}
               placeholder="Enter code"
-              className="flex-1 px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-green-200 focus:border-green-500 transition-all bg-white outline-none"
+              className="flex-1 px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-green-200 focus:border-green-500 transition-all bg-white outline-none text-gray-900 placeholder-gray-400"
+              style={{ WebkitTextFillColor: '#111827', color: '#111827', opacity: 1 }}
             />
             <button
               onClick={handleJoinWithCode}
@@ -604,14 +607,16 @@ export default function RoommatesManager() {
               value={newRoommate.name}
               onChange={(e) => setNewRoommate({ ...newRoommate, name: e.target.value })}
               placeholder="Name"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none text-gray-900 placeholder-gray-400"
+              style={{ WebkitTextFillColor: '#111827', color: '#111827', opacity: 1 }}
             />
             <input
               type="email"
               value={newRoommate.email}
               onChange={(e) => setNewRoommate({ ...newRoommate, email: e.target.value })}
               placeholder="Email"
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none text-gray-900 placeholder-gray-400"
+              style={{ WebkitTextFillColor: '#111827', color: '#111827', opacity: 1 }}
             />
             <div className="grid grid-cols-2 gap-2">
               <input
@@ -619,14 +624,16 @@ export default function RoommatesManager() {
                 value={newRoommate.phone}
                 onChange={(e) => setNewRoommate({ ...newRoommate, phone: e.target.value })}
                 placeholder="Phone"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none text-gray-900 placeholder-gray-400"
+                style={{ WebkitTextFillColor: '#111827', color: '#111827', opacity: 1 }}
               />
               <input
                 type="number"
                 value={newRoommate.budget || ''}
                 onChange={(e) => setNewRoommate({ ...newRoommate, budget: parseFloat(e.target.value) || 0 })}
                 placeholder="Budget $"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none text-gray-900 placeholder-gray-400"
+                style={{ WebkitTextFillColor: '#111827', color: '#111827', opacity: 1 }}
               />
             </div>
             <div className="flex gap-2">
