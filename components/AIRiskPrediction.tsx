@@ -17,27 +17,7 @@ export default function AIRiskPrediction({
 }: AIRiskPredictionProps) {
   const [predictions, setPredictions] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [animatedScore, setAnimatedScore] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
-
-  const animateScore = (targetScore: number) => {
-    const duration = 1500; // 1.5 seconds
-    const steps = 60;
-    const increment = targetScore / steps;
-    let current = 0;
-    let step = 0;
-
-    const timer = setInterval(() => {
-      step++;
-      current = Math.min(increment * step, targetScore);
-      setAnimatedScore(Math.round(current));
-      
-      if (step >= steps) {
-        clearInterval(timer);
-        setAnimatedScore(targetScore);
-      }
-    }, duration / steps);
-  };
 
   useEffect(() => {
     const fetchPredictions = async () => {
@@ -55,10 +35,6 @@ export default function AIRiskPrediction({
 
         const data = await response.json();
         setPredictions(data);
-        
-        // Animate the score
-        const targetScore = data.predictedScore || data.next30Days || currentRiskScore;
-        animateScore(targetScore);
       } catch (error) {
         console.error('Prediction error:', error);
       } finally {
@@ -94,9 +70,6 @@ export default function AIRiskPrediction({
 
   if (!predictions) return null;
 
-  // Use the predicted score from API (or fallback to current score)
-  const predictedScore = predictions.predictedScore || currentRiskScore;
-
   const getRiskColor = (score: number) => {
     if (score < 30) return { bg: 'bg-green-500', text: 'text-green-600', ring: 'ring-green-200' };
     if (score < 60) return { bg: 'bg-yellow-500', text: 'text-yellow-600', ring: 'ring-yellow-200' };
@@ -109,10 +82,10 @@ export default function AIRiskPrediction({
     return 'High Risk';
   };
 
-  const colors = getRiskColor(predictedScore);
-  const radius = 55; // Updated radius for larger circle
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (animatedScore / 100) * circumference;
+  // Use the predicted score from API (or fallback to current score)
+  const predictedScore = predictions.predictedScore || currentRiskScore;
+  const currentColors = getRiskColor(currentRiskScore);
+  const predictedColors = getRiskColor(predictedScore);
 
   return (
     <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-xl border border-purple-100 p-6">
@@ -148,77 +121,34 @@ export default function AIRiskPrediction({
         </div>
       )}
       
-      <div className="flex flex-col items-center justify-center">
-        {/* Circular Progress - Enhanced */}
-        <div className="relative w-40 h-40 mb-6">
-          <svg className="transform -rotate-90 w-40 h-40">
-            {/* Background circle */}
-            <circle
-              cx="50%"
-              cy="50%"
-              r="55"
-              stroke="currentColor"
-              strokeWidth="10"
-              fill="transparent"
-              className="text-gray-200"
-            />
-            {/* Progress circle */}
-            <circle
-              cx="50%"
-              cy="50%"
-              r="55"
-              stroke="currentColor"
-              strokeWidth="10"
-              fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={offset}
-              strokeLinecap="round"
-              className={`${colors.text} transition-all duration-1000 ease-out`}
-              style={{
-                filter: 'drop-shadow(0 0 6px currentColor)',
-              }}
-            />
-          </svg>
-          
-          {/* Center content */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className={`text-4xl font-extrabold ${colors.text} transition-all duration-300`}>
-              {animatedScore}
+      <div className="space-y-4">
+        {/* Current Risk */}
+        <div className="text-center">
+          <div className="text-xs text-gray-500 mb-1">Current Risk</div>
+          <div className={`text-2xl font-bold ${currentColors.text} mb-4`}>
+            {getRiskLabel(currentRiskScore)}
+          </div>
+        </div>
+
+        {/* Future Prediction */}
+        <div className="text-center border-t border-gray-200 pt-4">
+          <div className="text-xs text-gray-500 mb-1">Predicted Future Risk</div>
+          <div className={`text-2xl font-bold ${predictedColors.text} mb-2`}>
+            {getRiskLabel(predictedScore)}
+          </div>
+          {predictedScore !== currentRiskScore && (
+            <div className={`text-sm font-medium mt-2 ${
+              predictedScore > currentRiskScore ? 'text-red-600' : 'text-green-600'
+            }`}>
+              {predictedScore > currentRiskScore ? '↑ Risk increasing' : '↓ Risk decreasing'}
             </div>
-            <div className="text-sm text-gray-500 mt-1 font-medium">/100</div>
-          </div>
+          )}
+          {predictedScore === currentRiskScore && (
+            <div className="text-sm font-medium mt-2 text-gray-600">
+              Risk expected to stay similar
+            </div>
+          )}
         </div>
-
-        {/* Risk Label */}
-        <div className={`px-6 py-2 rounded-full ${colors.bg} text-white text-base font-bold mb-3 transition-all duration-300 shadow-lg`}>
-          {getRiskLabel(predictedScore)}
-        </div>
-
-        {/* Trend indicator - Enhanced */}
-        {predictions.trend && (
-          <div className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg ${
-            predictions.trend === 'improving' ? 'bg-green-100 text-green-700' :
-            predictions.trend === 'worsening' ? 'bg-red-100 text-red-700' :
-            'bg-yellow-100 text-yellow-700'
-          }`}>
-            {predictions.trend === 'improving' && (
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            )}
-            {predictions.trend === 'worsening' && (
-              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-              </svg>
-            )}
-            {predictions.trend === 'stable' && (
-              <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
-              </svg>
-            )}
-            <span className="capitalize">Risk is {predictions.trend}</span>
-          </div>
-        )}
       </div>
     </div>
   );

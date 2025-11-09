@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import toast from 'react-hot-toast';[]
+import toast from 'react-hot-toast';
 
 interface Photo {
   id: string;
@@ -28,6 +28,7 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
   const [missingApiKey, setMissingApiKey] = useState(false);
   const [usedStreetViewFallback, setUsedStreetViewFallback] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const hasShownToastRef = useRef(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -49,6 +50,7 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
   }, [selectedPhoto, isMounted]);
 
   useEffect(() => {
+    hasShownToastRef.current = false; // Reset when address/location changes
     fetchPhotos();
   }, [address, lat, lng]);
 
@@ -81,14 +83,18 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
       setPlaceName(data.placeName || address);
       setUsedStreetViewFallback(Boolean(data.streetViewFallback));
       
-      if (data.photos && data.photos.length > 0) {
-        if (data.streetViewFallback) {
-          toast.success('Showing Google Street View preview for this address');
+      // Only show toast once per fetch
+      if (!hasShownToastRef.current) {
+        if (data.photos && data.photos.length > 0) {
+          if (data.streetViewFallback) {
+            toast.success('Showing Google Street View preview for this address');
+          } else {
+            toast.success(`Found ${data.photos.length} photo${data.photos.length > 1 ? 's' : ''} from Google Places`);
+          }
         } else {
-          toast.success(`Found ${data.photos.length} photo${data.photos.length > 1 ? 's' : ''} from Google Places`);
+          toast.info('No photos found for this location');
         }
-      } else {
-        toast.info('No photos found for this location');
+        hasShownToastRef.current = true;
       }
     } catch (error: any) {
       console.error('Error fetching photos:', error);

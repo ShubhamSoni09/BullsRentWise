@@ -60,7 +60,7 @@ export default function Map({ lat, lng, address, complaints, crimes = [] }: MapP
       </Marker>
       <Circle
         center={[lat, lng]}
-        radius={800}
+        radius={400}
         pathOptions={{ color: 'blue', fillOpacity: 0.1 }}
       />
       {complaints.map((complaint, idx) => (

@@ -33,10 +33,6 @@ const BudgetTracker = dynamic(() => import('@/components/BudgetTracker'), {
   ssr: false,
 });
 
-const RoommateConnector = dynamic(() => import('@/components/RoommateConnector'), {
-  ssr: false,
-});
-
 const CommuteAnalysis = dynamic(() => import('@/components/CommuteAnalysis'), {
   ssr: false,
 });
@@ -123,11 +119,13 @@ function buildAudioSummary(data: RiskResultsProps['data']): string {
 export default function RiskResults({ data, onSave }: RiskResultsProps) {
   const { address, lat, lng, complaints, weather, crime, riskScore } = data;
   const [isSaved, setIsSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'ai' | 'budget'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'pest-mold' | 'location' | 'photos' | 'ai' | 'budget'>('overview');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [pestMoldData, setPestMoldData] = useState<any>(null);
+  const [loadingPestMold, setLoadingPestMold] = useState(false);
 
   useEffect(() => {
     // Check if address is already saved
@@ -166,6 +164,28 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
       });
     }
   }, [audioUrl]);
+
+  useEffect(() => {
+    // Fetch pest/mold data when tab is active
+    if (activeTab === 'pest-mold' && !pestMoldData && !loadingPestMold) {
+      setLoadingPestMold(true);
+      fetch('/api/pest-mold', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng, radius: 400 }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          setPestMoldData(data);
+          setLoadingPestMold(false);
+        })
+        .catch(err => {
+          console.error('Error fetching pest/mold data:', err);
+          setPestMoldData({ mold: [], cockroach: [], rodent: [], pest: [], stats: { total: 0, mold: 0, cockroach: 0, rodent: 0, pest: 0 } });
+          setLoadingPestMold(false);
+        });
+    }
+  }, [activeTab, lat, lng, pestMoldData, loadingPestMold]);
 
   const handlePlayAudioSummary = async () => {
     if (audioLoading) return;
@@ -342,6 +362,21 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
             </span>
           </button>
           <button
+            onClick={() => setActiveTab('pest-mold')}
+            className={`px-3 py-3 text-sm font-semibold border-b-3 transition-all duration-200 rounded-t-lg ${
+              activeTab === 'pest-mold'
+                ? 'border-orange-600 text-orange-600 bg-orange-50'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Molds/Pests
+            </span>
+          </button>
+          <button
             onClick={() => setActiveTab('location')}
             className={`px-5 py-3 text-sm font-semibold border-b-3 transition-all duration-200 rounded-t-lg ${
               activeTab === 'location'
@@ -374,14 +409,14 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
           </button>
           <button
             onClick={() => setActiveTab('ai')}
-            className={`px-5 py-3 text-sm font-semibold border-b-3 transition-all duration-200 rounded-t-lg ${
+            className={`px-3 py-3 text-sm font-semibold border-b-3 transition-all duration-200 rounded-t-lg ${
               activeTab === 'ai'
                 ? 'border-purple-600 text-purple-600 bg-purple-50'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
             }`}
           >
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="flex items-center gap-1 whitespace-nowrap">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v2a2 2 0 01-2-2v-.469c0-.621-.251-1.217-.688-1.653l-.548-.547z" />
               </svg>
               AI Analysis
@@ -400,7 +435,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
               <Map lat={lat} lng={lng} address={address} complaints={complaints} crimes={crime?.crimes || []} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100 shadow-sm hover:shadow-lg hover-lift transition-all duration-300">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-red-500 rounded-lg">
@@ -429,33 +464,6 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
                 </ul>
               </div>
 
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100 shadow-sm hover:shadow-lg hover-lift transition-all duration-300">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-1.5 bg-blue-500 rounded-lg">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                    </svg>
-                  </div>
-                  <h3 className="font-bold text-gray-900 text-sm">Weather</h3>
-                </div>
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between bg-white/50 rounded p-2">
-                    <span className="text-gray-700"><strong>Humidity:</strong></span>
-                    <span className={`font-semibold ${weather.avgHumidity > 70 ? 'text-red-600' : 'text-gray-900'}`}>
-                      {weather.avgHumidity?.toFixed(1)}%
-                      {weather.avgHumidity > 70 && <span className="ml-1">⚠️</span>}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between bg-white/50 rounded p-2">
-                    <span className="text-gray-700"><strong>Precip:</strong></span>
-                    <span className={`font-semibold ${weather.totalPrecip > 0.5 ? 'text-red-600' : 'text-gray-900'}`}>
-                      {weather.totalPrecip?.toFixed(2)}"
-                      {weather.totalPrecip > 0.5 && <span className="ml-1">⚠️</span>}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-lg hover-lift transition-all duration-300">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-purple-500 rounded-lg">
@@ -482,6 +490,167 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
               </div>
             </div>
           </>
+        )}
+
+        {activeTab === 'pest-mold' && (
+          <div className="space-y-4">
+            {loadingPestMold ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-600"></div>
+              </div>
+            ) : pestMoldData ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Mold Card */}
+                  <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100 shadow-sm hover:shadow-lg transition-all">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 bg-red-500 rounded-lg">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                        </svg>
+                      </div>
+                      <h3 className="font-bold text-gray-900 text-sm">Mold</h3>
+                    </div>
+                    <div className="text-2xl font-bold text-red-600">{pestMoldData.stats?.mold || 0}</div>
+                    <div className="text-xs text-gray-600 mt-1">complaints</div>
+                  </div>
+
+                  {/* Cockroach Card */}
+                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-4 border border-amber-100 shadow-sm hover:shadow-lg transition-all">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 bg-amber-500 rounded-lg">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="font-bold text-gray-900 text-sm">Cockroach</h3>
+                    </div>
+                    <div className="text-2xl font-bold text-amber-600">{pestMoldData.stats?.cockroach || 0}</div>
+                    <div className="text-xs text-gray-600 mt-1">complaints</div>
+                  </div>
+
+                  {/* Rodent Card */}
+                  <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-lg transition-all">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 bg-gray-500 rounded-lg">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="font-bold text-gray-900 text-sm">Rodent</h3>
+                    </div>
+                    <div className="text-2xl font-bold text-gray-600">{pestMoldData.stats?.rodent || 0}</div>
+                    <div className="text-xs text-gray-600 mt-1">complaints</div>
+                  </div>
+
+                  {/* Other Pest Card */}
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-lg transition-all">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 bg-purple-500 rounded-lg">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="font-bold text-gray-900 text-sm">Other Pests</h3>
+                    </div>
+                    <div className="text-2xl font-bold text-purple-600">{pestMoldData.stats?.pest || 0}</div>
+                    <div className="text-xs text-gray-600 mt-1">complaints</div>
+                  </div>
+                </div>
+
+                {/* Detailed Lists */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Mold Complaints */}
+                  {pestMoldData.mold && pestMoldData.mold.length > 0 && (
+                    <div className="bg-white rounded-xl p-4 border border-red-100 shadow-sm">
+                      <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-red-600">Mold Complaints</span>
+                        <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">{pestMoldData.mold.length}</span>
+                      </h4>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {pestMoldData.mold.slice(0, 10).map((item: any, idx: number) => (
+                          <div key={idx} className="border-l-3 border-red-500 pl-3 py-2 bg-red-50/50 rounded text-xs">
+                            <div className="font-semibold text-gray-900">{item.type || 'Mold Issue'}</div>
+                            <div className="text-gray-600 mt-1">{item.description || 'No description'}</div>
+                            {item.address && <div className="text-gray-500 mt-1 text-xs">{item.address}</div>}
+                            {item.date && <div className="text-gray-400 mt-1 text-xs">{new Date(item.date).toLocaleDateString()}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cockroach Complaints */}
+                  {pestMoldData.cockroach && pestMoldData.cockroach.length > 0 && (
+                    <div className="bg-white rounded-xl p-4 border border-amber-100 shadow-sm">
+                      <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-amber-600">Cockroach Complaints</span>
+                        <span className="text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded-full">{pestMoldData.cockroach.length}</span>
+                      </h4>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {pestMoldData.cockroach.slice(0, 10).map((item: any, idx: number) => (
+                          <div key={idx} className="border-l-3 border-amber-500 pl-3 py-2 bg-amber-50/50 rounded text-xs">
+                            <div className="font-semibold text-gray-900">{item.type || 'Cockroach Issue'}</div>
+                            <div className="text-gray-600 mt-1">{item.description || 'No description'}</div>
+                            {item.address && <div className="text-gray-500 mt-1 text-xs">{item.address}</div>}
+                            {item.date && <div className="text-gray-400 mt-1 text-xs">{new Date(item.date).toLocaleDateString()}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rodent Complaints */}
+                  {pestMoldData.rodent && pestMoldData.rodent.length > 0 && (
+                    <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+                      <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-gray-600">Rodent Complaints</span>
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{pestMoldData.rodent.length}</span>
+                      </h4>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {pestMoldData.rodent.slice(0, 10).map((item: any, idx: number) => (
+                          <div key={idx} className="border-l-3 border-gray-500 pl-3 py-2 bg-gray-50/50 rounded text-xs">
+                            <div className="font-semibold text-gray-900">{item.type || 'Rodent Issue'}</div>
+                            <div className="text-gray-600 mt-1">{item.description || 'No description'}</div>
+                            {item.address && <div className="text-gray-500 mt-1 text-xs">{item.address}</div>}
+                            {item.date && <div className="text-gray-400 mt-1 text-xs">{new Date(item.date).toLocaleDateString()}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Other Pest Complaints */}
+                  {pestMoldData.pest && pestMoldData.pest.length > 0 && (
+                    <div className="bg-white rounded-xl p-4 border border-purple-100 shadow-sm">
+                      <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-purple-600">Other Pest Complaints</span>
+                        <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">{pestMoldData.pest.length}</span>
+                      </h4>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {pestMoldData.pest.slice(0, 10).map((item: any, idx: number) => (
+                          <div key={idx} className="border-l-3 border-purple-500 pl-3 py-2 bg-purple-50/50 rounded text-xs">
+                            <div className="font-semibold text-gray-900">{item.type || 'Pest Issue'}</div>
+                            <div className="text-gray-600 mt-1">{item.description || 'No description'}</div>
+                            {item.address && <div className="text-gray-500 mt-1 text-xs">{item.address}</div>}
+                            {item.date && <div className="text-gray-400 mt-1 text-xs">{new Date(item.date).toLocaleDateString()}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {(!pestMoldData.stats || pestMoldData.stats.total === 0) && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                    <div className="text-green-600 text-4xl mb-2">✓</div>
+                    <div className="text-green-800 font-semibold">No mold or pest complaints found</div>
+                    <div className="text-green-600 text-sm mt-1">This area appears to be free of mold and pest issues</div>
+                  </div>
+                )}
+              </>
+            ) : null}
+          </div>
         )}
 
         {activeTab === 'ai' && (

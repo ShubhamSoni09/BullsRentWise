@@ -16,15 +16,14 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c; // Distance in meters
 }
 
-// Filter complaints by keywords (heat, leak, pest)
+// Filter complaints by keywords (heat, leak, pest, mold, cockroach)
+// OData fields: type, reason, subject
 function matchesComplaintType(complaint: any): boolean {
   const searchFields = [
-    complaint.service_request_type,
-    complaint.request_type,
     complaint.type,
-    complaint.description,
-    complaint.summary,
+    complaint.reason,
     complaint.subject,
+    complaint.description,
   ]
     .filter(Boolean)
     .map((f) => f.toLowerCase());
@@ -32,33 +31,68 @@ function matchesComplaintType(complaint: any): boolean {
   const searchText = searchFields.join(' ');
 
   return (
+    // Heating issues
     searchText.includes('heat') ||
     searchText.includes('heating') ||
     searchText.includes('no heat') ||
+    searchText.includes('furnace') ||
+    // Water/leak issues
     searchText.includes('leak') ||
     searchText.includes('leaking') ||
     searchText.includes('water leak') ||
+    searchText.includes('plumbing') ||
+    searchText.includes('pipe') ||
+    // Pest issues
     searchText.includes('pest') ||
     searchText.includes('rodent') ||
+    searchText.includes('mouse') ||
+    searchText.includes('mice') ||
+    searchText.includes('rat') ||
+    searchText.includes('rats') ||
     searchText.includes('roach') ||
+    searchText.includes('cockroach') ||
+    searchText.includes('cockroaches') ||
     searchText.includes('insect') ||
-    searchText.includes('vermin')
+    searchText.includes('bug') ||
+    searchText.includes('bugs') ||
+    searchText.includes('vermin') ||
+    searchText.includes('ant') ||
+    searchText.includes('ants') ||
+    searchText.includes('bed bug') ||
+    searchText.includes('bedbug') ||
+    searchText.includes('flea') ||
+    searchText.includes('termite') ||
+    // Mold/moisture issues
+    searchText.includes('mold') ||
+    searchText.includes('mildew') ||
+    searchText.includes('moisture') ||
+    searchText.includes('water damage') ||
+    searchText.includes('damp') ||
+    searchText.includes('humidity') ||
+    searchText.includes('flood') ||
+    searchText.includes('water intrusion') ||
+    // Housing violations that might indicate these issues
+    searchText.includes('housing violation') ||
+    searchText.includes('code violation') ||
+    searchText.includes('health violation') ||
+    searchText.includes('unsanitary') ||
+    searchText.includes('infestation')
   );
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { lat, lng, radius = 800 } = await request.json();
+    const { lat, lng, radius = 400 } = await request.json();
 
     if (!lat || !lng) {
       return NextResponse.json({ error: 'Latitude and longitude are required' }, { status: 400 });
     }
 
-    // Buffalo Open Data Portal - Socrata SODA API
-    // You may need to find the actual dataset ID from https://data.buffalony.gov
-    // Common dataset IDs for 311 data: often something like "xxxx-xxxx" or "xxxx_xxxx"
-    const DATASET_ID = process.env.BUFFALO_311_DATASET_ID || 'YOUR_DATASET_ID_HERE';
-    const BASE_URL = 'https://data.buffalony.gov/resource';
+    // Buffalo Open Data Portal - OData v4 API
+    // Dataset ID: whkc-e5vr (311 Service Requests)
+    // API endpoint: https://data.buffalony.gov/api/odata/v4/whkc-e5vr
+    const DATASET_ID = process.env.BUFFALO_311_DATASET_ID || 'whkc-e5vr';
+    const BASE_URL = 'https://data.buffalony.gov/api/odata/v4';
     
     // Calculate date range (last 90 days)
     const daysBack = 90;
@@ -66,56 +100,52 @@ export async function POST(request: NextRequest) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysBack);
 
-    // Format dates for Socrata query (YYYY-MM-DD format)
-    const startDateStr = startDate.toISOString().split('T')[0];
-    const endDateStr = endDate.toISOString().split('T')[0];
-
-    // Build Socrata SODA query
-    // Note: Socrata uses $where for filtering, but location filtering requires special handling
-    // We'll fetch recent complaints and filter by distance client-side
-    const whereClause = `created_date >= '${startDateStr}T00:00:00' AND created_date <= '${endDateStr}T23:59:59'`;
-    
-    // Try to fetch from Buffalo Open Data API
-    let complaints: any[] = [];
+    // Format dates for OData query
+    // The API expects dates in format: 'YYYY-MM-DDTHH:mm:ss.fff' or 'YYYY-MM-DDTHH:mm:ssZ'
+    const startDateStr = startDate.toISOString().replace('Z', '');
+    const endDateStr = endDate.toISOString().replace('Z', '');
     
     try {
-      // Attempt to fetch from Socrata API
-      // Common field names: latitude/longitude, lat/lng, location, point
-      const apiUrl = `${BASE_URL}/${DATASET_ID}.json?$limit=1000&$where=${encodeURIComponent(whereClause)}`;
+      // Build OData query
+      // OData uses $filter for filtering and $top for limiting
+      // Field names from the API: open_date, latitude, longitude, type, reason, subject
+      // Note: This OData endpoint doesn't support datetime() function, use string comparison
+      const filterClause = `open_date ge '${startDateStr}' and open_date le '${endDateStr}'`;
+      const apiUrl = `${BASE_URL}/${DATASET_ID}?$filter=${encodeURIComponent(filterClause)}&$top=1000&$orderby=open_date desc`;
       
       const response = await fetch(apiUrl, {
         headers: {
           'Accept': 'application/json',
-          'X-App-Token': process.env.BUFFALO_API_TOKEN || '', // Optional, some datasets require it
         },
-        // Add timeout
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(15000), // 15 second timeout for OData
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn(`Buffalo 311 OData API returned ${response.status}: ${errorText.substring(0, 200)}`);
+        return NextResponse.json([]);
+      }
+
+      const odataResponse = await response.json();
+      // OData returns data in a "value" array
+      const data: any[] = odataResponse.value || [];
+
+      if (data.length > 0) {
         // Process and filter complaints
         complaints = data
           .map((complaint: any) => {
-            // Extract coordinates - Socrata may store them in different formats
+            // Extract coordinates from OData response
+            // OData has: latitude, longitude, and location (GeoJSON Point)
             let complaintLat: number | null = null;
             let complaintLng: number | null = null;
 
-            // Try different possible field names
             if (complaint.latitude && complaint.longitude) {
               complaintLat = parseFloat(complaint.latitude);
               complaintLng = parseFloat(complaint.longitude);
-            } else if (complaint.lat && complaint.lng) {
-              complaintLat = parseFloat(complaint.lat);
-              complaintLng = parseFloat(complaint.lng);
-            } else if (complaint.location && complaint.location.latitude && complaint.location.longitude) {
-              complaintLat = parseFloat(complaint.location.latitude);
-              complaintLng = parseFloat(complaint.location.longitude);
-            } else if (complaint.point && complaint.point.coordinates) {
-              // GeoJSON format: [lng, lat]
-              complaintLng = parseFloat(complaint.point.coordinates[0]);
-              complaintLat = parseFloat(complaint.point.coordinates[1]);
+            } else if (complaint.location && complaint.location.coordinates) {
+              // GeoJSON Point format: [lng, lat]
+              complaintLng = parseFloat(complaint.location.coordinates[0]);
+              complaintLat = parseFloat(complaint.location.coordinates[1]);
             }
 
             // Only include if we have coordinates and it matches our criteria
@@ -124,14 +154,15 @@ export async function POST(request: NextRequest) {
               
               if (distance <= radius && matchesComplaintType(complaint)) {
                 return {
-                  type: complaint.service_request_type || complaint.request_type || complaint.type || 'Complaint',
-                  description: complaint.description || complaint.summary || complaint.subject || 'No description',
-                  date: complaint.created_date || complaint.date_created || complaint.date || new Date().toISOString(),
+                  type: complaint.type || complaint.reason || 'Complaint',
+                  description: complaint.reason || complaint.subject || complaint.type || 'No description',
+                  date: complaint.open_date || new Date().toISOString(),
                   status: complaint.status || 'Unknown',
                   lat: complaintLat,
                   lng: complaintLng,
                   distance: Math.round(distance),
-                  id: complaint.service_request_id || complaint.id || complaint.object_id,
+                  id: complaint.case_reference || complaint.__id,
+                  address: complaint.address_line_1 ? `${complaint.address_number || ''} ${complaint.address_line_1}`.trim() : null,
                 };
               }
             }
@@ -143,23 +174,15 @@ export async function POST(request: NextRequest) {
             return new Date(b.date).getTime() - new Date(a.date).getTime();
           })
           .slice(0, 50); // Limit to 50 most recent
+        
+        return NextResponse.json(complaints);
       } else {
-        console.warn(`Buffalo 311 API returned status ${response.status}`);
-        // If API fails, return empty array (graceful degradation)
         return NextResponse.json([]);
       }
     } catch (apiError: any) {
-      // If dataset ID is not set or API fails, return empty array
-      if (DATASET_ID === 'YOUR_DATASET_ID_HERE') {
-        console.log('Buffalo 311 dataset ID not configured. Please set BUFFALO_311_DATASET_ID in .env.local');
-      } else {
-        console.error('Error fetching from Buffalo 311 API:', apiError.message);
-      }
-      // Return empty array instead of failing
+      console.error('Error fetching from Buffalo 311 API:', apiError.message);
       return NextResponse.json([]);
     }
-
-    return NextResponse.json(complaints);
   } catch (error: any) {
     console.error('Complaints API error:', error);
     return NextResponse.json({ error: 'Failed to fetch complaints' }, { status: 500 });

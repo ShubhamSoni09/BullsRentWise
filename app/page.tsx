@@ -64,7 +64,7 @@ export default function Home() {
         fetch('/api/complaints', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lat, lng, radius: 800 }),
+          body: JSON.stringify({ lat, lng, radius: 400 }),
         }),
         fetch('/api/weather', {
           method: 'POST',
@@ -74,19 +74,13 @@ export default function Home() {
         fetch('/api/crime', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lat, lng, radius: 800 }),
+          body: JSON.stringify({ lat, lng, radius: 400 }),
         }),
       ]);
 
-      if (!complaintsRes.ok) {
-        console.warn('Failed to fetch complaints');
-      }
       if (!weatherRes.ok) {
         const error = await weatherRes.json();
         throw new Error(error.error || 'Failed to fetch weather data');
-      }
-      if (!crimeRes.ok) {
-        console.warn('Failed to fetch crime data');
       }
 
       const complaints = complaintsRes.ok ? await complaintsRes.json() : [];
@@ -177,18 +171,21 @@ export default function Home() {
   };
 
   return (
-    <main className={`bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 ${riskData ? 'min-h-screen' : 'h-screen overflow-hidden'}`}>
+    <main className={`relative ${riskData ? 'min-h-screen' : 'h-screen overflow-hidden'}`}>
+        {/* Gradient overlay */}
+        <div className="fixed inset-0 z-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" />
+        
         {/* Decorative background elements */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
           <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
         </div>
 
-        <div className={`relative max-w-[98%] mx-auto p-2 lg:p-4 overflow-x-hidden ${riskData ? '' : 'h-full flex flex-col'}`}>
+        <div className={`relative z-10 max-w-[98%] mx-auto p-2 sm:p-3 lg:p-4 overflow-x-hidden ${riskData ? '' : 'h-full flex flex-col'}`}>
         {/* Enhanced Header */}
-        <div className={`text-center ${riskData ? 'mb-6 lg:mb-8' : 'mb-4 lg:mb-6 shrink-0'} animate-fadeIn`}>
-          <div className="inline-block mb-3">
-            <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 mb-2">
+        <div className={`text-center ${riskData ? 'mb-4 sm:mb-6 lg:mb-8' : 'mb-3 sm:mb-4 lg:mb-6 shrink-0'} animate-fadeIn`}>
+          <div className="inline-block mb-2 sm:mb-3">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-1 sm:mb-2">
               <span className="inline-block transform hover:scale-105 transition-transform duration-300">
                 🐂
               </span>{' '}
@@ -197,18 +194,18 @@ export default function Home() {
               </span>
             </h1>
           </div>
-          <p className="text-base lg:text-lg text-gray-700 font-medium max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base lg:text-lg text-gray-700 font-medium max-w-2xl mx-auto px-2">
             UB Student Rental Assistant
           </p>
-          <p className="text-sm lg:text-base text-gray-600 mt-2 max-w-5xl mx-auto whitespace-nowrap">
+          <p className="text-xs sm:text-sm lg:text-base text-gray-600 mt-1 sm:mt-2 max-w-5xl mx-auto px-2 sm:whitespace-nowrap">
             Analyze Buffalo rentals: risk scores, commute times, nearby amenities, and AI-powered recommendations
           </p>
         </div>
 
         <div className={`grid grid-cols-1 lg:grid-cols-12 gap-0 ${riskData ? '' : 'flex-1 min-h-0 overflow-hidden'}`}>
           {/* Left Sidebar - Saved Addresses & Roommates */}
-          <div className={`lg:col-span-3 border-r border-gray-300 pr-4 lg:pr-6 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
-            <div className={`sticky top-4 space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth`} style={{ scrollBehavior: 'smooth' }}>
+          <div className={`lg:col-span-3 border-r-0 lg:border-r border-gray-300 pr-0 lg:pr-4 xl:pr-6 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
+            <div className={`lg:sticky lg:top-4 space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth px-2 lg:px-0`} style={{ scrollBehavior: 'smooth' }}>
               <div className="animate-slideIn" style={{ animationDelay: '0.2s' }}>
                 <SavedAddresses 
                   onAddressSaved={() => {}} 
@@ -222,7 +219,7 @@ export default function Home() {
           </div>
 
           {/* Main Content - Scrollable */}
-          <div className={`lg:col-span-6 space-y-4 lg:space-y-6 border-x border-gray-300 px-4 lg:px-6 ${riskData ? '' : 'flex flex-col min-h-0 overflow-hidden'}`}>
+          <div className={`lg:col-span-6 space-y-4 lg:space-y-6 border-x-0 lg:border-x border-gray-300 px-2 sm:px-4 lg:px-6 ${riskData ? '' : 'flex flex-col min-h-0 overflow-hidden'}`}>
             <div className="animate-fadeIn" style={{ animationDelay: '0.1s' }}>
               <AddressInput onSubmit={handleAddressSubmit} loading={loading} loadingStep={loadingStep} />
             </div>
@@ -244,8 +241,8 @@ export default function Home() {
           </div>
           
           {/* Right Sidebar - Preferences & AI Recommendations */}
-          <div className={`lg:col-span-3 border-l border-gray-300 pl-4 lg:pl-6 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
-            <div className={`sticky top-4 space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth`} style={{ scrollBehavior: 'smooth' }}>
+          <div className={`lg:col-span-3 border-l-0 lg:border-l border-gray-300 pl-0 lg:pl-4 xl:pl-6 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
+            <div className={`lg:sticky lg:top-4 space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth px-2 lg:px-0`} style={{ scrollBehavior: 'smooth' }}>
               <div className="animate-slideIn" style={{ animationDelay: '0.3s' }}>
                 <UserPreferences />
               </div>

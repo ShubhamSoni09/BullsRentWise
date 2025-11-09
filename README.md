@@ -5,13 +5,13 @@
 ## What It Does
 
 BullsRentWise helps UB students quickly scan a Buffalo rental address for:
-- **311 Complaints**: Recent heat, leak, and pest complaints within 800m radius
+- **311 Complaints**: Recent heat, leak, and pest complaints within 400m radius
 - **Weather Risk**: Short-term humidity/precipitation data to flag potential mold/water issues
-- **Crime Data**: Recent crime incidents (violent, property, drug, vandalism) within 800m radius
+- **Crime Data**: Recent crime incidents (violent, property, drug, vandalism) within 400m radius
 - **AI-Powered Analysis**: NLP complaint analysis, ML risk predictions, and AI chatbot assistant
 - **Property Photos**: Google Places API integration for property photos
 - **Budget Tracking**: Track rent, utilities, and affordability per person
-- **Roommate Connection**: Real-time Firebase groups to share codes, votes, comments, and audio summaries
+- **Roommate Connection**: Real-time Supabase groups to share codes and collaborate
 - **Risk Score**: 0-100 risk assessment with visual map and red flags
 - **Save Addresses**: ⭐ Save addresses locally (with optional Supabase cloud sync)
 
@@ -78,21 +78,20 @@ OPENAI_API_KEY=sk-your-openai-key-here
 # One API key works for all Google services!
 GOOGLE_API_KEY=your-google-api-key-here
 
-# Optional: For Supabase cloud storage
+# Optional: Alternative Weather APIs (if NWS fails)
+# OpenWeatherMap: Free tier available at https://openweathermap.org/api
+OPENWEATHER_API_KEY=your-openweather-api-key-here
+# WeatherAPI.com: Free tier available at https://www.weatherapi.com/
+WEATHERAPI_KEY=your-weatherapi-key-here
+
+# Optional: Alternative Crime Data APIs
+# CrimeoMeter: Get API key at https://www.crimeometer.com/
+CRIMEOMETER_API_KEY=your-crimeometer-api-key-here
+
+# Optional: For Supabase roommate collaboration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
-
-# Optional: For Firebase roommate collaboration
-NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
-# The following are only needed if you enable storage/messaging
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
-
-**Note:** See `BUFFALO_311_SETUP.md`, `CRIME_DATA_SETUP.md`, and `AI_ML_SETUP.md` for detailed setup instructions.
 
 3. **Run development server:**
 ```bash
@@ -126,9 +125,7 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 │   ├── AIRiskPrediction.tsx       # ML risk predictions
 │   ├── AIComplaintAnalysis.tsx    # AI complaint analysis
 │   ├── BudgetTracker.tsx          # Budget and affordability tracker
-│   ├── RoommateConnector.tsx      # Roommate connection and collaboration
-│   ├── SharedPropertyList.tsx     # Shared property list with voting
-│   └── PropertyComparison.tsx      # Compare multiple properties
+│   ├── RoommatesManager.tsx       # Roommate connection and collaboration
 └── package.json
 ```
 

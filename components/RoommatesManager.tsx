@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 
 interface Roommate {
@@ -14,6 +14,9 @@ interface Roommate {
 }
 
 export default function RoommatesManager() {
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
+  const [showEmailForm, setShowEmailForm] = useState(true);
   const [roommates, setRoommates] = useState<Roommate[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newRoommate, setNewRoommate] = useState({
@@ -25,24 +28,142 @@ export default function RoommatesManager() {
   });
   const [shareCode, setShareCode] = useState<string>('');
   const [joiningCode, setJoiningCode] = useState<string>('');
+  const [currentUserGroup, setCurrentUserGroup] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const roommatesRef = useRef<Roommate[]>([]);
 
   useEffect(() => {
-    // Load roommates from localStorage (global roommates, not property-specific)
-    const saved = localStorage.getItem('globalRoommates');
-    if (saved) {
-      const data = JSON.parse(saved);
-      setRoommates(data.roommates || []);
-      setShareCode(data.shareCode || generateShareCode());
-    } else {
-      setShareCode(generateShareCode());
+    // Load user email from localStorage
+    const savedUser = localStorage.getItem('roommate_user');
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      setUserEmail(userData.email || '');
+      setUserName(userData.name || '');
+      setShowEmailForm(false);
+      
+      // Load user's current group
+      if (userData.currentGroup) {
+        setCurrentUserGroup(userData.currentGroup);
+        setShareCode(userData.currentGroup);
+        loadGroupData(userData.currentGroup);
+      } else {
+        // Create new group for user
+        const newCode = generateShareCode();
+        setShareCode(newCode);
+        setCurrentUserGroup(newCode);
+        createNewGroup(newCode, userData.email, userData.name);
+      }
     }
   }, []);
+
+  const loadGroupData = useCallback(async (code: string, showToast = false) => {
+    if (!code) return;
+    
+    try {
+      setIsRefreshing(true);
+      const response = await fetch(`/api/roommates?shareCode=${encodeURIComponent(code)}`);
+      if (response.ok) {
+        const groupData = await response.json();
+        const newRoommates = groupData.roommates || [];
+        const previousCount = roommatesRef.current.length;
+        
+        setRoommates(newRoommates);
+        roommatesRef.current = newRoommates;
+        
+        // Show notification if new members joined
+        if (showToast && newRoommates.length > previousCount) {
+          const newCount = newRoommates.length - previousCount;
+          toast.success(`${newCount} new roommate${newCount > 1 ? 's' : ''} joined!`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load group:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  // Auto-refresh group data every 3 seconds when user has a group
+  useEffect(() => {
+    if (!currentUserGroup || !userEmail) return;
+
+    const refreshInterval = setInterval(() => {
+      loadGroupData(currentUserGroup);
+    }, 3000); // Refresh every 3 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [currentUserGroup, userEmail, loadGroupData]);
+
+  const handleRefresh = () => {
+    if (currentUserGroup) {
+      loadGroupData(currentUserGroup, true);
+    }
+  };
+
+  const createNewGroup = async (code: string, email: string, name: string) => {
+    const currentUser: Roommate = {
+      id: `user_${Date.now()}`,
+      name: name || 'You',
+      email: email,
+      joinedAt: new Date().toISOString(),
+      budget: 0,
+    };
+
+    const initialGroup = {
+      shareCode: code,
+      roommates: [currentUser],
+      updatedAt: new Date().toISOString(),
+    };
+
+        setRoommates([currentUser]);
+        roommatesRef.current = [currentUser];
+        
+        try {
+          await fetch('/api/roommates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(initialGroup),
+          });
+        } catch (error) {
+          console.error('Failed to create group:', error);
+        }
+  };
+
+  const handleEmailSubmit = () => {
+    if (!userEmail.trim()) {
+      toast.error('Please enter your email');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail.trim())) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    // Save user info
+    const userData = {
+      email: userEmail.trim(),
+      name: userName.trim() || 'You',
+      currentGroup: null,
+    };
+    localStorage.setItem('roommate_user', JSON.stringify(userData));
+
+    // Create new group for user
+    const newCode = generateShareCode();
+    setShareCode(newCode);
+    setCurrentUserGroup(newCode);
+    setShowEmailForm(false);
+    
+    createNewGroup(newCode, userEmail.trim(), userName.trim() || 'You');
+    toast.success('Welcome! Your roommate group is ready.');
+  };
 
   const generateShareCode = () => {
     return `BRW-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   };
 
-  const handleAddRoommate = () => {
+  const handleAddRoommate = async () => {
     if (!newRoommate.name || !newRoommate.email) {
       toast.error('Name and email are required');
       return;
@@ -60,37 +181,172 @@ export default function RoommatesManager() {
 
     const updated = [...roommates, roommate];
     setRoommates(updated);
+    roommatesRef.current = updated;
+    
+    // Save to API if shareCode exists
+    if (shareCode) {
+      try {
+        await fetch('/api/roommates', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shareCode, roommate }),
+        });
+      } catch (error) {
+        console.error('Failed to save to API:', error);
+      }
+    }
+    
     saveRoommates(updated);
     setNewRoommate({ name: '', email: '', phone: '', budget: 0, preferences: '' });
     setShowAddForm(false);
     toast.success('Roommate added!');
   };
 
-  const handleJoinWithCode = () => {
+  const handleJoinWithCode = async () => {
     if (!joiningCode) {
       toast.error('Please enter a share code');
       return;
     }
 
-    // In a real app, this would connect to a backend
-    toast.success(`Joining group with code: ${joiningCode}`);
-    // You could implement actual sharing logic here
+    if (!userEmail) {
+      toast.error('Please add your email first');
+      setShowEmailForm(true);
+      return;
+    }
+
+    // Normalize the code (remove spaces, convert to uppercase)
+    const normalizedCode = joiningCode.trim().toUpperCase().replace(/\s+/g, '');
+    
+    if (!normalizedCode.startsWith('BRW-')) {
+      toast.error('Invalid code format. Codes should start with "BRW-"');
+      return;
+    }
+
+    // Don't join if it's the same group
+    if (normalizedCode === currentUserGroup) {
+      toast('You are already in this group', { icon: 'ℹ️' });
+      return;
+    }
+
+    try {
+      // Remove user from previous group if they were in one
+      if (currentUserGroup) {
+        try {
+          const prevGroupResponse = await fetch(`/api/roommates?shareCode=${encodeURIComponent(currentUserGroup)}`);
+          if (prevGroupResponse.ok) {
+            const prevGroupData = await prevGroupResponse.json();
+            const currentUserInPrev = prevGroupData.roommates?.find((r: Roommate) => r.email === userEmail);
+            if (currentUserInPrev) {
+              await fetch(`/api/roommates?shareCode=${encodeURIComponent(currentUserGroup)}&roommateId=${encodeURIComponent(currentUserInPrev.id)}`, {
+                method: 'DELETE',
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to leave previous group:', error);
+        }
+      }
+
+      // Fetch the new group
+      const response = await fetch(`/api/roommates?shareCode=${encodeURIComponent(normalizedCode)}`);
+      
+      if (response.ok) {
+        const groupData = await response.json();
+        
+        // Create current user object
+        const currentUser: Roommate = {
+          id: `user_${Date.now()}`,
+          name: userName || 'You',
+          email: userEmail,
+          joinedAt: new Date().toISOString(),
+          budget: 0,
+        };
+
+        // Check if user is already in the group
+        const existingUser = groupData.roommates?.find((r: Roommate) => r.email === userEmail);
+
+        if (!existingUser) {
+          // Add current user to the new group via API
+          const addResponse = await fetch('/api/roommates', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shareCode: normalizedCode, roommate: currentUser }),
+          });
+
+          if (addResponse.ok) {
+            const updated = await addResponse.json();
+            setRoommates(updated.group.roommates);
+            roommatesRef.current = updated.group.roommates;
+          } else {
+            const roommatesList = groupData.roommates || [];
+            setRoommates(roommatesList);
+            roommatesRef.current = roommatesList;
+          }
+        } else {
+          const roommatesList = groupData.roommates || [];
+          setRoommates(roommatesList);
+          roommatesRef.current = roommatesList;
+        }
+
+        // Update user's current group
+        setShareCode(normalizedCode);
+        setCurrentUserGroup(normalizedCode);
+        setJoiningCode('');
+        
+        // Update localStorage
+        const savedUser = localStorage.getItem('roommate_user');
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          userData.currentGroup = normalizedCode;
+          localStorage.setItem('roommate_user', JSON.stringify(userData));
+        }
+        
+        toast.success(`Joined new group! Found ${groupData.roommates?.length || 0} roommate(s).`);
+        return;
+      } else {
+        toast.error(`Share code "${normalizedCode}" not found.`);
+      }
+    } catch (error) {
+      console.error('Error joining group:', error);
+      toast.error('Failed to join group. Please try again.');
+    }
   };
 
-  const handleRemoveRoommate = (id: string) => {
+  const handleRemoveRoommate = async (id: string) => {
+    // Prevent user from removing themselves (they should join another group to leave)
+    const roommateToRemove = roommates.find(r => r.id === id);
+    if (roommateToRemove && roommateToRemove.email === userEmail) {
+      toast.error('To leave this group, join another group using a share code');
+      return;
+    }
+
     const updated = roommates.filter(r => r.id !== id);
     setRoommates(updated);
+    roommatesRef.current = updated;
+    
+    // Remove from API if shareCode exists
+    if (shareCode) {
+      try {
+        await fetch(`/api/roommates?shareCode=${encodeURIComponent(shareCode)}&roommateId=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+      } catch (error) {
+        console.error('Failed to remove from API:', error);
+      }
+    }
+    
     saveRoommates(updated);
     toast.success('Roommate removed');
   };
 
   const saveRoommates = (roommateList: Roommate[]) => {
-    const data = {
-      roommates: roommateList,
-      shareCode,
-      updatedAt: new Date().toISOString(),
-    };
-    localStorage.setItem('globalRoommates', JSON.stringify(data));
+    // Update user's current group in localStorage
+    const savedUser = localStorage.getItem('roommate_user');
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      userData.currentGroup = shareCode;
+      localStorage.setItem('roommate_user', JSON.stringify(userData));
+    }
   };
 
   const handleShare = async () => {
@@ -116,6 +372,59 @@ export default function RoommatesManager() {
   const totalBudget = roommates.reduce((sum, r) => sum + r.budget, 0);
   const avgBudget = roommates.length > 0 ? totalBudget / roommates.length : 0;
 
+  // Show email form if user hasn't added their email
+  if (showEmailForm || !userEmail) {
+    return (
+      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 p-3 hover-lift">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <h2 className="text-base font-bold text-gray-900">My Roommates</h2>
+        </div>
+
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+          <h3 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Add Your Email to Get Started
+          </h3>
+          <p className="text-xs text-gray-600 mb-4">
+            Enter your email to create or join a roommate group and start collaborating!
+          </p>
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="Your Name (optional)"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
+            />
+            <input
+              type="email"
+              value={userEmail}
+              onChange={(e) => setUserEmail(e.target.value)}
+              placeholder="Your Email *"
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none"
+            />
+            <button
+              onClick={handleEmailSubmit}
+              className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 p-3 hover-lift">
       <div className="flex items-center justify-between mb-3">
@@ -127,9 +436,38 @@ export default function RoommatesManager() {
           </div>
           <h2 className="text-base font-bold text-gray-900">My Roommates</h2>
         </div>
-        <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
-          {roommates.length} {roommates.length !== 1 ? 'people' : 'person'}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold">
+            {roommates.length} {roommates.length !== 1 ? 'people' : 'person'}
+          </span>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="px-2 py-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh group"
+          >
+            <svg 
+              className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              setShowEmailForm(true);
+            }}
+            className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+            title="Change email"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="space-y-3">

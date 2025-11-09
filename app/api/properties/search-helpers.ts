@@ -3,7 +3,7 @@
 
 import { NextRequest } from 'next/server';
 
-export async function fetchComplaintsForLocation(lat: number, lng: number, radius: number = 800): Promise<any[]> {
+export async function fetchComplaintsForLocation(lat: number, lng: number, radius: number = 400): Promise<any[]> {
   try {
     // Directly import and call the route handler
     const { POST } = await import('../complaints/route');
@@ -42,7 +42,7 @@ export async function fetchWeatherForLocation(lat: number, lng: number): Promise
   return { avgHumidity: 70, totalPrecip: 0.5 };
 }
 
-export async function fetchCrimeForLocation(lat: number, lng: number, radius: number = 800): Promise<any> {
+export async function fetchCrimeForLocation(lat: number, lng: number, radius: number = 400): Promise<any> {
   try {
     const { POST } = await import('../crime/route');
     const url = new URL('http://localhost/api/crime');
