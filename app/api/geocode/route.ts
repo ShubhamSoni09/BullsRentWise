@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export async function POST(request: NextRequest) {
   try {
@@ -6,6 +7,21 @@ export async function POST(request: NextRequest) {
 
     if (!address) {
       return NextResponse.json({ error: 'Address is required' }, { status: 400 });
+    }
+
+    // Log the search to Supabase (non-blocking)
+    if (isSupabaseConfigured && supabase) {
+      supabase
+        .from('search_logs')
+        .insert([{ address: address.trim() }])
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error logging search:', error);
+          }
+        })
+        .catch((err) => {
+          console.error('Error logging search:', err);
+        });
     }
 
     // Using Nominatim (OpenStreetMap) geocoding - free, no API key needed

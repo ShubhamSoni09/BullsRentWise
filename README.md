@@ -302,11 +302,11 @@ See `DEPLOY.md` for end-to-end Vercel/Netlify deployment steps, cron ideas, and 
 ## License
 
 MIT
-
 ## Contributing
 
 - Hazel Mahajan (UBIT 50592568)
 - Shubham Vikas Soni (UBIT 50593888)
 
 We welcome forks, issues, and pull requests—feel free to build on BullsRentWise!
+
 
