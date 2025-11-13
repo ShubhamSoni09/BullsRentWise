@@ -30,9 +30,7 @@ export default function LazyLoad({
         if (entry.isIntersecting) {
           setIsVisible(true);
           setHasLoaded(true);
-          if (elementRef.current) {
-            observer.unobserve(elementRef.current);
-          }
+          observer.unobserve(entry.target);
         }
       },
       {
@@ -41,14 +39,17 @@ export default function LazyLoad({
       }
     );
 
-    if (elementRef.current) {
-      observer.observe(elementRef.current);
+    const currentElement = elementRef.current;
+
+    if (currentElement) {
+      observer.observe(currentElement);
     }
 
     return () => {
-      if (elementRef.current) {
-        observer.unobserve(elementRef.current);
+      if (currentElement) {
+        observer.unobserve(currentElement);
       }
+      observer.disconnect();
     };
   }, [threshold, rootMargin, hasLoaded]);
 

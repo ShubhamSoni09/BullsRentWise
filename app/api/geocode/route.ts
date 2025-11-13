@@ -11,17 +11,19 @@ export async function POST(request: NextRequest) {
 
     // Log the search to Supabase (non-blocking)
     if (isSupabaseConfigured && supabase) {
-      supabase
-        .from('search_logs')
-        .insert([{ address: address.trim() }])
-        .then(({ error }) => {
+      void (async () => {
+        try {
+          const { error } = await supabase
+            .from('search_logs')
+            .insert([{ address: address.trim() }]);
+
           if (error) {
             console.error('Error logging search:', error);
           }
-        })
-        .catch((err) => {
+        } catch (err) {
           console.error('Error logging search:', err);
-        });
+        }
+      })();
     }
 
     // Using Nominatim (OpenStreetMap) geocoding - free, no API key needed

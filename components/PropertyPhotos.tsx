@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 interface Photo {
   id: string;
@@ -49,12 +50,7 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
     };
   }, [selectedPhoto, isMounted]);
 
-  useEffect(() => {
-    hasShownToastRef.current = false; // Reset when address/location changes
-    fetchPhotos();
-  }, [address, lat, lng]);
-
-  const fetchPhotos = async () => {
+  const fetchPhotos = useCallback(async () => {
     setLoading(true);
     setMissingApiKey(false);
     setUsedStreetViewFallback(false);
@@ -103,7 +99,12 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
     } finally {
       setLoading(false);
     }
-  };
+  }, [address, lat, lng]);
+
+  useEffect(() => {
+    hasShownToastRef.current = false; // Reset when address/location changes
+    void fetchPhotos();
+  }, [fetchPhotos]);
 
   const openPhotoViewer = (photo: Photo) => {
     setSelectedPhoto(photo);
@@ -128,16 +129,21 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <img
-              src={selectedPhoto.url}
-              alt={selectedPhoto.caption || 'Property photo'}
-              className="w-full h-full object-contain rounded-lg bg-black"
-              loading="lazy"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23ddd" width="400" height="400"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
-              }}
-            />
+            <div className="relative w-full h-full min-h-[320px]">
+              <Image
+                src={selectedPhoto.url}
+                alt={selectedPhoto.caption || 'Property photo'}
+                fill
+                sizes="(max-width: 768px) 100vw, 70vw"
+                className="object-contain rounded-lg bg-black"
+                unoptimized
+                onError={(event) => {
+                  const target = event.currentTarget;
+                  target.src =
+                    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23ddd" width="400" height="400"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
+                }}
+              />
+            </div>
             {selectedPhoto.caption && (
               <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4 rounded-b-lg">
                 <p className="font-medium mb-1">{selectedPhoto.caption}</p>
@@ -161,7 +167,9 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
           )}
         </div>
         <button
-          onClick={fetchPhotos}
+          onClick={() => {
+            void fetchPhotos();
+          }}
           disabled={loading}
           className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
         >
@@ -240,15 +248,19 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
                 className="group relative bg-white rounded-xl overflow-hidden border-2 border-gray-200 hover:border-pink-400 transition-all shadow-md hover:shadow-xl hover-lift"
               >
                 <div className="aspect-square relative overflow-hidden">
-                  <img
+                  <Image
                     src={photo.url}
                     alt={photo.caption || 'Property photo'}
-                    className="w-full h-full object-cover cursor-pointer"
+                    fill
+                    sizes="(max-width: 1024px) 50vw, 25vw"
+                    className="object-cover cursor-pointer"
+                    unoptimized
                     onClick={() => openPhotoViewer(photo)}
-                    onError={(e) => {
-                      // Fallback if image fails to load
-                      const target = e.target as HTMLImageElement;
-                      target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23ddd" width="400" height="400"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
+                    onError={(event) => {
+                      const target = event.currentTarget;
+                      target.onerror = null;
+                      target.src =
+                        'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect fill="%23ddd" width="400" height="400"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="20" dy="10.5" font-weight="bold" x="50%25" y="50%25" text-anchor="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
                     }}
                   />
                   {/* Overlay on hover */}

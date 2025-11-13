@@ -32,6 +32,33 @@ export default function RoommatesManager() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const roommatesRef = useRef<Roommate[]>([]);
 
+  const loadGroupData = useCallback(async (code: string, showToast = false) => {
+    if (!code) return;
+
+    try {
+      setIsRefreshing(true);
+      const response = await fetch(`/api/roommates?shareCode=${encodeURIComponent(code)}`);
+      if (response.ok) {
+        const groupData = await response.json();
+        const newRoommates = groupData.roommates || [];
+        const previousCount = roommatesRef.current.length;
+
+        setRoommates(newRoommates);
+        roommatesRef.current = newRoommates;
+
+        // Show notification if new members joined
+        if (showToast && newRoommates.length > previousCount) {
+          const newCount = newRoommates.length - previousCount;
+          toast.success(`${newCount} new roommate${newCount > 1 ? 's' : ''} joined!`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load group:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
   useEffect(() => {
     // Load user email from localStorage
     const savedUser = localStorage.getItem('roommate_user');
@@ -40,7 +67,7 @@ export default function RoommatesManager() {
       setUserEmail(userData.email || '');
       setUserName(userData.name || '');
       setShowEmailForm(false);
-      
+
       // Load user's current group
       if (userData.currentGroup) {
         setCurrentUserGroup(userData.currentGroup);
@@ -54,34 +81,7 @@ export default function RoommatesManager() {
         createNewGroup(newCode, userData.email, userData.name);
       }
     }
-  }, []);
-
-  const loadGroupData = useCallback(async (code: string, showToast = false) => {
-    if (!code) return;
-    
-    try {
-      setIsRefreshing(true);
-      const response = await fetch(`/api/roommates?shareCode=${encodeURIComponent(code)}`);
-      if (response.ok) {
-        const groupData = await response.json();
-        const newRoommates = groupData.roommates || [];
-        const previousCount = roommatesRef.current.length;
-        
-        setRoommates(newRoommates);
-        roommatesRef.current = newRoommates;
-        
-        // Show notification if new members joined
-        if (showToast && newRoommates.length > previousCount) {
-          const newCount = newRoommates.length - previousCount;
-          toast.success(`${newCount} new roommate${newCount > 1 ? 's' : ''} joined!`);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load group:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, []);
+  }, [loadGroupData]);
 
   // Auto-refresh group data every 3 seconds when user has a group
   useEffect(() => {

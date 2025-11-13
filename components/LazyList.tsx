@@ -21,24 +21,36 @@ export default function LazyList<T>({
 }: LazyListProps<T>) {
   const [visibleCount, setVisibleCount] = useState(initialCount);
   const [isLoading, setIsLoading] = useState(false);
-  const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     setVisibleCount(initialCount);
   }, [items.length, initialCount]);
 
   useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
+
+  useEffect(() => {
     if (visibleCount >= items.length) return;
 
-    observerRef.current = new IntersectionObserver(
+    const sentinelElement = sentinelRef.current;
+    if (!sentinelElement) return;
+
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (entry.isIntersecting && !isLoading) {
+        if (entry.isIntersecting && !isLoadingRef.current) {
           setIsLoading(true);
-          setTimeout(() => {
+          isLoadingRef.current = true;
+          timeoutId = setTimeout(() => {
             setVisibleCount((prev) => Math.min(prev + increment, items.length));
             setIsLoading(false);
+            isLoadingRef.current = false;
+            timeoutId = null;
           }, 100);
         }
       },
@@ -47,16 +59,19 @@ export default function LazyList<T>({
       }
     );
 
-    if (sentinelRef.current) {
-      observerRef.current.observe(sentinelRef.current);
-    }
+    observer.observe(sentinelElement);
 
     return () => {
-      if (observerRef.current && sentinelRef.current) {
-        observerRef.current.unobserve(sentinelRef.current);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        setIsLoading(false);
+        isLoadingRef.current = false;
       }
+      observer.unobserve(sentinelElement);
+      observer.disconnect();
     };
-  }, [visibleCount, items.length, increment, threshold, isLoading]);
+  }, [visibleCount, items.length, increment, threshold]);
 
   const visibleItems = items.slice(0, visibleCount);
   const hasMore = visibleCount < items.length;

@@ -48,7 +48,7 @@ export default function SavedAddresses({ onAddressSaved, onAddressesChange }: Sa
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('addressSaved', handleStorageChange);
     };
-  }, [onAddressSaved]);
+  }, [onAddressSaved, onAddressesChange]);
 
   // Poll for changes (for same-tab updates)
   useEffect(() => {
