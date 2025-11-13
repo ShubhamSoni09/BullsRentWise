@@ -35,3 +35,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# markdown documentation files (contain setup info/credentials)
+# Excluding specific files but keeping README.md
+DEPLOY.md
+SUPABASE_SETUP.md
+SUPABASE_CREDENTIALS.md
+
