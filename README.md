@@ -1,19 +1,23 @@
 # 🐂 BullsRentWise
 
-**UB Student Rental Risk Checker** - Quickly scan Buffalo rental addresses for 311 complaints and weather-related risks.
+**US Rental Risk Checker** - Quickly scan US rental addresses for safety, weather, complaint, affordability, and roommate decision signals.
 
 ## What It Does
 
-BullsRentWise helps UB students quickly scan a Buffalo rental address for:
-- **311 Complaints**: Heat, leak, pest, noise, and sanitation violations in the last 90 days
+BullsRentWise helps renters quickly scan a US rental address for:
+- **Full-address validation**: Requires city and state so vague searches do not produce misleading reports
+- **Risk Score**: 0-100 rating based on complaints, weather, and crime signals
+- **Local Complaint History**: City 311/code complaint data where an integrated local dataset is available
 - **Weather & Mold Risk**: National Weather Service trends plus mold/moisture heuristics
-- **Crime Data**: Violent, property, drug, and vandalism incidents around the neighborhood
-- **AI Assistants**: Complaint summaries, GPT chat, risk prediction, and spoken audio briefings
+- **Crime Data**: National-capable CrimeoMeter support when configured, with Buffalo Open Data fallback for Buffalo-area addresses
+- **Nearby Amenities**: OpenStreetMap/Overpass-powered groceries, restaurants, cafes, gyms, parks, libraries, and transit
 - **Property Media**: Google Places photos with automatic Street View fallback
+- **AI Assistants**: Complaint summaries, GPT chat, risk prediction, and spoken audio briefings
 - **Budget Tracking**: Split rent, utilities, and affordability per roommate
-- **Roommate Collaboration**: Supabase groups with share codes, votes, and comments
-- **Risk Score**: 0–100 rating with map overlays and red-flag callouts
-- **Saved Addresses**: ⭐ Local favorites with optional Supabase sync across devices
+- **Roommate Collaboration**: Supabase groups with share codes
+- **Market Recommendations**: Preference-aware shortlist generation from saved/searched locations
+- **Saved Addresses**: Local favorites with optional Supabase sync across devices
+- **Responsive UI**: Premium desktop, tablet, and mobile layouts
 
 ## Tech Stack
 
@@ -26,22 +30,23 @@ BullsRentWise helps UB students quickly scan a Buffalo rental address for:
 
 ### Backend (Next.js API Routes)
 - **Geocoding**: OpenStreetMap Nominatim
-- **311 Complaints**: Buffalo Open Data Portal (Socrata SODA API)
-- **Crime Reports**: Buffalo Open Data Portal
+- **311 Complaints**: Local city open-data adapters where available; Buffalo Open Data is currently integrated
+- **Crime Reports**: CrimeoMeter when configured, with Buffalo Open Data fallback for Buffalo-area addresses
 - **Weather & Mold**: National Weather Service feeds plus derived mold risk index
 - **Pest & Mold Hotline**: Tenant agency guidance and escalation steps
 - **AI + Audio**: OpenAI GPT-4o-mini / GPT-3.5 chat, summaries, and text-to-speech
 - **Property Media**: Google Places Photos with Street View fallback
+- **Amenities**: OpenStreetMap Overpass API
 - **Roommates Collaboration**: Supabase REST + Realtime for groups, votes, comments
 - **Storage**: Browser localStorage with Supabase sync tables
 
 ### Why Next.js API Routes?
 
-✅ **CORS handling** - Some APIs block browser requests  
-✅ **API key protection** - Hide sensitive keys server-side  
-✅ **Rate limiting** - Control API usage  
-✅ **Caching** - 311 data doesn't change often  
-✅ **Serverless** - Deploy easily to Vercel/Netlify  
+✅ **CORS handling** - Some APIs block browser requests
+✅ **API key protection** - Hide sensitive keys server-side
+✅ **Rate limiting** - Control API usage
+✅ **Graceful fallbacks** - App remains usable when optional providers are missing
+✅ **Serverless** - Deploy easily to Vercel/Netlify
 
 ## Getting Started
 
@@ -58,7 +63,7 @@ npm install
 
 2. **Set up environment variables** (create `.env.local`):
 ```env
-# Buffalo Open Data (https://data.buffalony.gov)
+# Local open data currently integrated for Buffalo (https://data.buffalony.gov)
 BUFFALO_311_DATASET_ID=311-dataset-id
 BUFFALO_CRIME_DATASET_ID=crime-dataset-id
 BUFFALO_API_TOKEN=optional-socrata-token
@@ -73,7 +78,7 @@ GOOGLE_API_KEY=your-google-api-key
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 
-# Optional alternative data providers
+# Optional national/alternative data providers
 OPENWEATHER_API_KEY=optional
 WEATHERAPI_KEY=optional
 CRIMEOMETER_API_KEY=optional
@@ -95,10 +100,14 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 ├── app/
 │   ├── api/
 │   │   ├── geocode/route.ts      # Geocoding API (OpenStreetMap)
-│   │   ├── complaints/route.ts    # 311 complaints API (Buffalo Open Data)
-│   │   ├── crime/route.ts         # Crime data API (Buffalo Open Data)
+│   │   ├── complaints/route.ts    # Local 311/code complaint API
+│   │   ├── crime/route.ts         # Crime data API
 │   │   ├── weather/route.ts       # Weather + mold index API
-│   │   ├── pest-mold/route.ts     # Tenant hotline resources
+│   │   ├── amenities/route.ts     # OpenStreetMap/Overpass amenities
+│   │   ├── commute/route.ts       # Local mobility estimates
+│   │   ├── pest-mold/route.ts     # Pest/mold complaint signals
+│   │   ├── places/photos/route.ts # Google Places + Street View media
+│   │   ├── properties/search/route.ts # Market-style recommendation candidates
 │   │   ├── roommates/route.ts     # Supabase roommate API
 │   │   └── ai/
 │   │       ├── analyze-complaint/route.ts  # AI complaint analysis
@@ -111,23 +120,36 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 │   └── globals.css                # Global styles
 ├── components/
 │   ├── AddressInput.tsx           # Address input form
-│   ├── RiskResults.tsx            # Risk score + map display
+│   ├── RiskResults.tsx            # Risk score + report tabs
 │   ├── SavedAddresses.tsx         # Saved addresses sidebar
 │   ├── AIChatbot.tsx              # AI chatbot assistant
 │   ├── AIRiskPrediction.tsx       # ML risk predictions
 │   ├── AIComplaintAnalysis.tsx    # AI complaint analysis
 │   ├── BudgetTracker.tsx          # Budget and affordability tracker
 │   ├── RoommatesManager.tsx       # Supabase roommate collaboration hub
+│   ├── AIRecommendations.tsx      # Market recommendations
+│   ├── CommuteAnalysis.tsx        # Local mobility and trip estimates
+│   ├── NearbyAmenities.tsx        # Amenity discovery
 │   └── PropertyPhotos.tsx         # Google Places + Street View gallery
 ├── lib/
 │   └── supabaseClient.ts          # Supabase helpers
-├── DEPLOY.md                      # Hosting + CI/CD notes
+├── public/images/                 # Public image assets
 └── package.json
 ```
 
-## Buffalo 311 API Setup
+## Data Coverage Notes
 
-The app is configured to work with Buffalo's Open Data Portal (Socrata). To enable 311 complaints:
+BullsRentWise is US-wide for address lookup, weather, photos, amenities, budget tools, saved addresses, roommate tools, and AI features.
+
+Some data sources are naturally city-specific:
+
+- **311/code complaints**: Currently integrated for Buffalo Open Data. Other cities can be added with new adapters.
+- **Pest/mold complaint history**: Uses local complaint data where integrated; otherwise returns a safe empty state.
+- **Crime data**: Use `CRIMEOMETER_API_KEY` for national incident data. Buffalo Open Data remains as a fallback for Buffalo-area searches.
+
+The app handles missing optional providers gracefully so deployment is not blocked by every API key.
+
+## Buffalo Open Data Setup
 
 1. **Find the Dataset ID:**
    - Visit: https://data.buffalony.gov
@@ -136,16 +158,15 @@ The app is configured to work with Buffalo's Open Data Portal (Socrata). To enab
 
 2. **Configure Environment Variable:**
    - Add `BUFFALO_311_DATASET_ID=your-dataset-id` to `.env.local`
+   - Add `BUFFALO_CRIME_DATASET_ID=your-dataset-id` to enable Buffalo crime fallback
    - Optionally add `BUFFALO_API_TOKEN` if required
-
-3. **See `BUFFALO_311_SETUP.md` for detailed setup instructions**
 
 The API integration includes:
 - ✅ Location-based filtering (800m radius)
 - ✅ Date filtering (last 90 days)
 - ✅ Complaint type filtering (heat, leaks, pests)
 - ✅ Distance calculation
-- ✅ Graceful error handling
+- ✅ Graceful fallback outside integrated local coverage
 
 ### Supabase Setup (Roommates + Cloud Sync)
 
@@ -197,24 +218,31 @@ CREATE POLICY "roommates update" ON roommate_groups
 ## API Endpoints
 
 ### POST `/api/geocode`
-Geocode an address to lat/lng.
+Geocode a full US address to coordinates and city/state metadata. The app expects a specific address with city and state.
 
 **Request:**
 ```json
-{ "address": "123 Main St, Buffalo, NY" }
+{ "address": "350 5th Ave, New York, NY" }
 ```
 
 **Response:**
 ```json
-{ "lat": 42.8864, "lng": -78.8784 }
+{
+  "lat": 40.7484,
+  "lng": -73.9857,
+  "city": "New York",
+  "state": "New York",
+  "country": "United States",
+  "displayName": "350 5th Ave, New York, NY, United States"
+}
 ```
 
 ### POST `/api/complaints`
-Fetch 311 complaints near a location.
+Fetch local 311/code complaints near a location where a local dataset is integrated.
 
 **Request:**
 ```json
-{ "lat": 42.8864, "lng": -78.8784, "radius": 800 }
+{ "lat": 40.7484, "lng": -73.9857, "radius": 800 }
 ```
 
 **Response:**
@@ -235,7 +263,7 @@ Fetch weather data (humidity/precipitation).
 
 **Request:**
 ```json
-{ "lat": 42.8864, "lng": -78.8784 }
+{ "lat": 40.7484, "lng": -73.9857 }
 ```
 
 **Response:**
@@ -247,6 +275,30 @@ Fetch weather data (humidity/precipitation).
 }
 ```
 
+### POST `/api/amenities`
+Find nearby amenities using OpenStreetMap/Overpass.
+
+**Request:**
+```json
+{ "lat": 40.7484, "lng": -73.9857, "radius": 5 }
+```
+
+### POST `/api/commute`
+Estimate local mobility, nearby transit distance, walkability, and trip times.
+
+**Request:**
+```json
+{ "lat": 40.7484, "lng": -73.9857 }
+```
+
+### POST `/api/places/photos`
+Fetch Google Places photos or Street View fallback for a specific address.
+
+**Request:**
+```json
+{ "address": "350 5th Ave, New York, NY", "lat": 40.7484, "lng": -73.9857 }
+```
+
 ### `/api/roommates`
 - `GET /api/roommates?shareCode=ABCD123` → Fetch roommates for a share code
 - `POST` body `{ shareCode, roommates: [...] }` → Create or overwrite a group
@@ -256,8 +308,8 @@ Fetch weather data (humidity/precipitation).
 ### POST `/api/ai/audio-summary`
 Generate an MP3 briefing via OpenAI text-to-speech. Returns a signed URL for playback.
 
-### GET `/api/pest-mold`
-Provides hotline numbers, checklists, and local agencies when pest or mold issues are detected.
+### POST `/api/pest-mold`
+Fetch pest/mold complaint signals where a city complaint dataset is integrated.
 
 ## Risk Score Calculation
 
@@ -285,19 +337,20 @@ The risk score (0-100) is calculated based on:
 
 ## Deployment
 
-### Vercel (Recommended)
+### Vercel
 ```bash
 npm install -g vercel
 vercel
 ```
 
 ### Netlify
+This repo includes `netlify.toml` with `@netlify/plugin-nextjs` and `NODE_VERSION=18`.
+
 ```bash
 npm run build
-# Deploy the .next folder
 ```
 
-See `DEPLOY.md` for end-to-end Vercel/Netlify deployment steps, cron ideas, and CI tips.
+Before deploying, configure the same environment variable names listed above in your host dashboard. Do not rename keys unless the code is updated at the same time.
 
 ## License
 
