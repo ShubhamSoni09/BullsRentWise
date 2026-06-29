@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import toast from 'react-hot-toast';
 import Image from 'next/image';
 
 interface Photo {
@@ -29,7 +28,6 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
   const [missingApiKey, setMissingApiKey] = useState(false);
   const [usedStreetViewFallback, setUsedStreetViewFallback] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const hasShownToastRef = useRef(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -71,7 +69,6 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
         setMissingApiKey(true);
         setPhotos([]);
         setPlaceName(address);
-        toast.error('Set GOOGLE_API_KEY in your .env.local to enable property photos');
         return;
       }
 
@@ -79,22 +76,8 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
       setPlaceName(data.placeName || address);
       setUsedStreetViewFallback(Boolean(data.streetViewFallback));
       
-      // Only show toast once per fetch
-      if (!hasShownToastRef.current) {
-        if (data.photos && data.photos.length > 0) {
-          if (data.streetViewFallback) {
-            toast.success('Showing Google Street View preview for this address');
-          } else {
-            toast.success(`Found ${data.photos.length} photo${data.photos.length > 1 ? 's' : ''} from Google Places`);
-          }
-        } else {
-          toast('No photos found for this location', { icon: 'ℹ️' });
-        }
-        hasShownToastRef.current = true;
-      }
     } catch (error: any) {
       console.error('Error fetching photos:', error);
-      toast.error('Failed to load photos');
       setPhotos([]);
     } finally {
       setLoading(false);
@@ -102,7 +85,6 @@ export default function PropertyPhotos({ address, lat, lng }: PropertyPhotosProp
   }, [address, lat, lng]);
 
   useEffect(() => {
-    hasShownToastRef.current = false; // Reset when address/location changes
     void fetchPhotos();
   }, [fetchPhotos]);
 

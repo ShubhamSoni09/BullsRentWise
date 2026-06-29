@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
 
 interface NearbyAmenitiesProps {
   lat: number;
@@ -88,7 +87,6 @@ export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesPr
         setData(amenitiesData);
       } catch (error: any) {
         console.error('Error fetching amenities:', error);
-        toast.error('Failed to load nearby amenities');
       } finally {
         setLoading(false);
       }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import toast from 'react-hot-toast';
 
 interface AIChatbotProps {
   context?: {
@@ -73,7 +72,6 @@ export default function AIChatbot({ context }: AIChatbotProps) {
       }
     } catch (error) {
       console.error('Chat error:', error);
-      toast.error('Failed to get AI response');
       setMessages((prev) => [
         ...prev,
         {

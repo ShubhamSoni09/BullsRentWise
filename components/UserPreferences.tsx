@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
 
 interface UserPreferences {
   // Budget
@@ -83,7 +82,6 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
   const handleSave = () => {
     localStorage.setItem('userPreferences', JSON.stringify(preferences));
     setSaved(true);
-    toast.success('Preferences saved!');
     if (onPreferencesChange) {
       onPreferencesChange(preferences);
     }
@@ -134,13 +132,15 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
               </span>
             )}
           </div>
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:border-teal-200 hover:bg-teal-50 hover:text-slate-950"
-          >
-            {isOpen ? 'Close Preferences' : 'Edit Preferences'}
-          </button>
         </div>
+      </div>
+      <div className="mb-4 flex justify-center">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="h-11 w-full max-w-[13rem] rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:border-teal-200 hover:bg-teal-50 hover:text-slate-950"
+        >
+          {isOpen ? 'Close Preferences' : 'Edit Preferences'}
+        </button>
       </div>
 
       {!isOpen && saved && (

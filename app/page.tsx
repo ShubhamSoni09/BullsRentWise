@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import toast from 'react-hot-toast';
 import AddressInput from '@/components/AddressInput';
 import SkeletonLoader from '@/components/SkeletonLoader';
 
@@ -37,6 +36,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>('');
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
 
   const handleAddressSubmit = async (address: string) => {
     setLoading(true);
@@ -119,10 +119,8 @@ export default function Home() {
         }
       }
 
-      toast.success('Risk analysis complete!');
     } catch (error: any) {
       console.error('Error fetching data:', error);
-      toast.error(error.message || 'Error fetching data. Please try again.');
     } finally {
       setLoading(false);
       setLoadingStep('');
@@ -186,7 +184,7 @@ export default function Home() {
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(90deg,_rgba(2,6,23,0.88)_0%,_rgba(15,23,42,0.68)_52%,_rgba(15,23,42,0.28)_100%)]" />
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(180deg,_rgba(2,6,23,0.04)_0%,_rgba(248,250,252,0.40)_62%,_rgba(248,250,252,0.92)_100%)]" />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-10 pt-8 sm:px-6 sm:py-6 lg:px-8">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 pb-12 pt-10 sm:px-6 sm:py-6 lg:px-8">
         <nav className="mb-4 flex items-center justify-between text-white sm:mb-5">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-950 via-blue-950 to-teal-800 text-2xl shadow-lg shadow-slate-950/20">
@@ -224,8 +222,8 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="grid flex-1 grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <section className="min-w-0 space-y-4 sm:space-y-5">
+        <div className="grid flex-1 grid-cols-1 gap-5 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <section className="min-w-0 space-y-5 sm:space-y-5">
             <AddressInput onSubmit={handleAddressSubmit} loading={loading} loadingStep={loadingStep} />
             {!riskData && !loading && <WelcomeSection />}
             {loading && (
@@ -234,7 +232,7 @@ export default function Home() {
               </div>
             )}
             {riskData && !loading && (
-              <div className="animate-reportReveal">
+              <div key={riskData.displayName || riskData.address} className="animate-reportReveal">
                 <RiskResults data={riskData} onSave={() => {}} />
               </div>
             )}
@@ -243,11 +241,26 @@ export default function Home() {
           <aside className="space-y-4 lg:sticky lg:top-6">
             <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
               <div className="mb-3 rounded-2xl bg-gradient-to-r from-slate-50 via-blue-50 to-teal-50 p-3 sm:mb-4 sm:p-4">
-                <p className="section-label">Workspace</p>
-                <h2 className="mt-1 text-lg font-black text-slate-950">Plan and compare</h2>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="section-label">Workspace</p>
+                    <h2 className="mt-1 text-lg font-black text-slate-950">Plan and compare</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setWorkspaceOpen((open) => !open)}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition-colors hover:border-teal-200 hover:bg-teal-50 hover:text-slate-950 lg:hidden"
+                    aria-expanded={workspaceOpen}
+                    aria-label={workspaceOpen ? 'Collapse workspace' : 'Expand workspace'}
+                  >
+                    <svg className={`h-4 w-4 transition-transform ${workspaceOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                </div>
                 <p className="mt-1 text-sm text-slate-500">Save options, coordinate roommates, and tune recommendations.</p>
               </div>
-              <div className="space-y-4 rounded-2xl lg:max-h-[calc(100vh-11rem)] lg:overflow-y-auto lg:pr-1 scroll-smooth">
+              <div className={`${workspaceOpen ? 'block' : 'hidden'} space-y-4 rounded-2xl lg:block lg:max-h-[calc(100vh-11rem)] lg:overflow-y-auto lg:pr-1 scroll-smooth`}>
                 <SavedAddresses
                   onAddressSaved={() => {}}
                   onAddressesChange={(addresses) => setSavedAddresses(addresses)}

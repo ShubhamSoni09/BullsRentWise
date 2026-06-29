@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
 
 interface BudgetTrackerProps {
   address: string;
@@ -41,7 +40,6 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
     };
     localStorage.setItem(`budget_${address}`, JSON.stringify(budgetData));
     setSaved(true);
-    toast.success('Budget saved!');
     if (onBudgetUpdate) onBudgetUpdate(monthlyBudget);
   };
 

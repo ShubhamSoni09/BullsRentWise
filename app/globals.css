@@ -178,13 +178,22 @@ html {
 @keyframes reportReveal {
   from {
     opacity: 0;
-    transform: translateY(28px) scale(0.985);
-    filter: blur(6px);
+    transform: translateY(18px) scale(0.992);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-    filter: blur(0);
+  }
+}
+
+@keyframes reportContentReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -232,7 +241,14 @@ html {
 }
 
 .animate-reportReveal {
-  animation: reportReveal 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: reportReveal 0.95s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top center;
+  will-change: opacity, transform;
+}
+
+.animate-reportContentReveal {
+  animation: reportContentReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  will-change: opacity, transform;
 }
 
 /* Hover effects */

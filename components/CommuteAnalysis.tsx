@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
 
 interface CommuteAnalysisProps {
   lat: number;
@@ -60,7 +59,6 @@ export default function CommuteAnalysis({ lat, lng, address }: CommuteAnalysisPr
         setData(commuteData);
       } catch (error: any) {
         console.error('Error fetching commute data:', error);
-        toast.error('Failed to load commute analysis');
       } finally {
         setLoading(false);
       }

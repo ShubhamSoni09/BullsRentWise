@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
 import LazyList from '@/components/LazyList';
 
 interface Recommendation {
@@ -57,7 +56,6 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
         : DEFAULT_PREFERENCES;
       
       // Search for properties online based on preferences
-      toast.loading('Searching for properties online...', { id: 'searching' });
       
       const anchorAddress = savedAddresses.find((addr) => addr.lat && addr.lng)
         || discoveredProperties.find((addr) => addr.lat && addr.lng);
@@ -78,9 +76,7 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
       if (searchRes.ok) {
         const searchData = await searchRes.json();
         onlineProperties = searchData.properties || [];
-        toast.success(`Found ${onlineProperties.length} properties online!`, { id: 'searching' });
       } else {
-        toast.dismiss('searching');
         console.warn('Online property search failed, using saved/discovered properties only');
       }
 
@@ -117,7 +113,6 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
       const allProperties = [...savedProps, ...discoveredProps, ...onlineProperties];
 
       if (allProperties.length === 0) {
-        toast.error('No properties found. Try adjusting your preferences.');
         return;
       }
 
@@ -163,10 +158,8 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
       const data = await response.json();
       setRecommendations(data.recommendations || []);
       setSummary(data.summary || null);
-      toast.success(`Found ${data.recommendations?.length || 0} recommendations!`);
     } catch (error: any) {
       console.error('Recommendation error:', error);
-      toast.error(error.message || 'Failed to generate recommendations');
     } finally {
       setLoading(false);
     }
@@ -211,13 +204,11 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
   const handleSaveRecommendation = async (rec: Recommendation) => {
     // Check if already saved
     if (savedRecommendations.has(rec.address)) {
-      toast.error('Address already saved');
       return;
     }
 
     try {
       // Geocode address to get lat/lng
-      toast.loading('Saving recommendation...', { id: 'saving' });
       const geocodeRes = await fetch('/api/geocode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -251,10 +242,8 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
       // Dispatch event to notify other components
       window.dispatchEvent(new Event('addressSaved'));
       
-      toast.success('Recommendation saved!', { id: 'saving' });
     } catch (error: any) {
       console.error('Error saving recommendation:', error);
-      toast.error(error.message || 'Failed to save recommendation', { id: 'saving' });
     }
   };
 
@@ -267,32 +256,34 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
             </svg>
         </div>
         <div className="min-w-0 flex-1">
-            <p className="section-label">Market</p>
-            <h2 className="truncate text-base font-black text-slate-950">Market Recommendations</h2>
-            <p className="mt-1 text-xs leading-5 text-slate-500">Compare matching rentals near your selected area.</p>
-          <button
-            onClick={fetchRecommendations}
-            disabled={loading}
-            className="btn-primary mt-4 h-11 w-full px-4 text-sm"
-          >
-            {loading ? (
-              <>
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Find Matches
-              </>
-            )}
-          </button>
+          <p className="section-label">Market</p>
+          <h2 className="truncate text-base font-black text-slate-950">Market Recommendations</h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">Compare matching rentals near your selected area.</p>
         </div>
+      </div>
+      <div className="mb-4 flex justify-center">
+        <button
+          onClick={fetchRecommendations}
+          disabled={loading}
+          className="btn-primary h-11 w-full max-w-[13rem] px-4 text-sm"
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Find Matches
+            </>
+          )}
+        </button>
       </div>
 
       {!loading && recommendations.length === 0 && !summary && (

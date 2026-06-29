@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 
+const offlineGroupResponse = (shareCode: string, roommates: any[] = []) => NextResponse.json({
+  success: true,
+  offline: true,
+  group: {
+    shareCode,
+    roommates,
+    updatedAt: new Date().toISOString(),
+  },
+});
+
+const isNetworkFailure = (error: any) => {
+  const message = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+  return message.includes('fetch failed') || message.includes('network') || error?.name === 'TypeError';
+};
+
 // GET - Get roommates for a share code
 export async function GET(request: NextRequest) {
-  if (!isSupabaseConfigured) {
-    return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
-  }
-
   const { searchParams } = new URL(request.url);
   const shareCode = searchParams.get('shareCode');
 
@@ -16,11 +27,11 @@ export async function GET(request: NextRequest) {
 
   const normalizedCode = shareCode.trim().toUpperCase();
 
-  try {
-    if (!supabase) {
-      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
-    }
+  if (!isSupabaseConfigured || !supabase) {
+    return NextResponse.json({ error: 'Share code not found', offline: true }, { status: 404 });
+  }
 
+  try {
     const { data, error } = await supabase
       .from('roommate_groups')
       .select('*')
@@ -37,17 +48,17 @@ export async function GET(request: NextRequest) {
       updatedAt: data.updated_at,
     });
   } catch (error: any) {
-    console.error('Supabase error:', error);
+    if (isNetworkFailure(error)) {
+      return NextResponse.json({ error: 'Share code not found', offline: true }, { status: 404 });
+    }
+
+    console.error('Roommate group fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch group' }, { status: 500 });
   }
 }
 
 // POST - Create or update a roommate group
 export async function POST(request: NextRequest) {
-  if (!isSupabaseConfigured) {
-    return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
-  }
-
   try {
     const body = await request.json();
     const { shareCode, roommates } = body;
@@ -58,8 +69,8 @@ export async function POST(request: NextRequest) {
 
     const normalizedCode = shareCode.trim().toUpperCase();
 
-    if (!supabase) {
-      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    if (!isSupabaseConfigured || !supabase) {
+      return offlineGroupResponse(normalizedCode, roommates || []);
     }
 
     const { data, error } = await supabase
@@ -75,7 +86,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Supabase error:', error);
+      if (isNetworkFailure(error)) {
+        return offlineGroupResponse(normalizedCode, roommates || []);
+      }
+
+      console.error('Roommate group save error:', error);
       return NextResponse.json({ error: 'Failed to save group' }, { status: 500 });
     }
 
@@ -88,17 +103,17 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error:', error);
+    if (isNetworkFailure(error)) {
+      return offlineGroupResponse('LOCAL');
+    }
+
+    console.error('Roommate group save error:', error);
     return NextResponse.json({ error: 'Failed to save group' }, { status: 500 });
   }
 }
 
 // PUT - Add a roommate to a group
 export async function PUT(request: NextRequest) {
-  if (!isSupabaseConfigured) {
-    return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
-  }
-
   try {
     const body = await request.json();
     const { shareCode, roommate } = body;
@@ -109,8 +124,8 @@ export async function PUT(request: NextRequest) {
 
     const normalizedCode = shareCode.trim().toUpperCase();
 
-    if (!supabase) {
-      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    if (!isSupabaseConfigured || !supabase) {
+      return offlineGroupResponse(normalizedCode, roommate ? [roommate] : []);
     }
 
     // Get existing group
@@ -171,17 +186,17 @@ export async function PUT(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error:', error);
+    if (isNetworkFailure(error)) {
+      return offlineGroupResponse('LOCAL');
+    }
+
+    console.error('Roommate add error:', error);
     return NextResponse.json({ error: 'Failed to add roommate' }, { status: 500 });
   }
 }
 
 // DELETE - Remove a roommate from a group
 export async function DELETE(request: NextRequest) {
-  if (!isSupabaseConfigured) {
-    return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
-  }
-
   try {
     const { searchParams } = new URL(request.url);
     const shareCode = searchParams.get('shareCode');
@@ -193,8 +208,8 @@ export async function DELETE(request: NextRequest) {
 
     const normalizedCode = shareCode.trim().toUpperCase();
 
-    if (!supabase) {
-      return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
+    if (!isSupabaseConfigured || !supabase) {
+      return offlineGroupResponse(normalizedCode);
     }
 
     // Get existing group
@@ -235,7 +250,11 @@ export async function DELETE(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Error:', error);
+    if (isNetworkFailure(error)) {
+      return offlineGroupResponse('LOCAL');
+    }
+
+    console.error('Roommate remove error:', error);
     return NextResponse.json({ error: 'Failed to remove roommate' }, { status: 500 });
   }
 }

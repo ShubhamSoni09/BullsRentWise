@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import toast from 'react-hot-toast';
 import RiskBreakdown from '@/components/RiskBreakdown';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import LazyLoad from '@/components/LazyLoad';
@@ -155,7 +154,6 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
     if (audioUrl && audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => {
-        toast.error('Unable to play audio.');
         setIsPlaying(false);
       });
     }
@@ -189,7 +187,6 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
     if (audioUrl && audioRef.current) {
       if (audioRef.current.paused) {
         audioRef.current.play().catch(() => {
-          toast.error('Unable to play audio.');
         });
       } else {
         audioRef.current.pause();
@@ -218,7 +215,6 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
       setAudioUrl(url);
     } catch (error: any) {
       console.error('Audio summary error:', error);
-      toast.error(error.message || 'Could not generate audio summary.');
     } finally {
       setAudioLoading(false);
     }
@@ -229,7 +225,6 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
     const savedAddresses = saved ? JSON.parse(saved) : [];
     
     if (isSaved) {
-      toast.error('Address already saved');
       return;
     }
 
@@ -245,7 +240,6 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
     const updated = [...savedAddresses, newAddress];
     localStorage.setItem('savedAddresses', JSON.stringify(updated));
     setIsSaved(true);
-    toast.success('Address saved!');
     // Dispatch event to notify SavedAddresses component
     window.dispatchEvent(new Event('addressSaved'));
     if (onSave) onSave();
@@ -432,7 +426,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
       </div>
 
       {/* Tab Content */}
-      <div className="space-y-4 p-3 sm:space-y-5 sm:p-6 lg:p-7">
+      <div className="animate-reportContentReveal space-y-4 p-3 sm:space-y-5 sm:p-6 lg:p-7">
         {activeTab === 'overview' && (
           <>
             <RiskBreakdown complaints={complaints} weather={weather} crime={crime} riskScore={riskScore} />
@@ -526,11 +520,30 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
         {activeTab === 'pest-mold' && (
           <div className="space-y-4">
             {loadingPestMold ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-200 border-t-orange-600"></div>
+              <div className="animate-reportReveal space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  {['Mold', 'Cockroach', 'Rodent', 'Other pests'].map((label) => (
+                    <div key={label} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="mb-4 flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-2xl bg-slate-100 shimmer" />
+                        <div className="h-4 w-24 rounded-full bg-slate-100 shimmer" />
+                      </div>
+                      <div className="h-8 w-12 rounded-xl bg-slate-200 shimmer" />
+                      <div className="mt-2 h-3 w-20 rounded-full bg-slate-100 shimmer" />
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="h-4 w-40 rounded-full bg-slate-100 shimmer" />
+                  <div className="mt-4 space-y-2">
+                    <div className="h-10 rounded-2xl bg-slate-100 shimmer" />
+                    <div className="h-10 rounded-2xl bg-slate-100 shimmer" />
+                    <div className="h-10 w-4/5 rounded-2xl bg-slate-100 shimmer" />
+                  </div>
+                </div>
               </div>
             ) : pestMoldData ? (
-              <>
+              <div className="animate-reportReveal space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Mold Card */}
                   <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100 shadow-sm hover:shadow-lg transition-all">
@@ -679,7 +692,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
                     <div className="text-green-600 text-sm mt-1">This area appears to be free of mold and pest issues</div>
                   </div>
                 )}
-              </>
+              </div>
             ) : null}
           </div>
         )}

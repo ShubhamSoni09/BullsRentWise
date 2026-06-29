@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import toast from 'react-hot-toast';
 
 interface Roommate {
   id: string;
@@ -32,7 +31,7 @@ export default function RoommatesManager() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const roommatesRef = useRef<Roommate[]>([]);
 
-  const loadGroupData = useCallback(async (code: string, showToast = false) => {
+  const loadGroupData = useCallback(async (code: string) => {
     if (!code) return;
 
     try {
@@ -41,16 +40,9 @@ export default function RoommatesManager() {
       if (response.ok) {
         const groupData = await response.json();
         const newRoommates = groupData.roommates || [];
-        const previousCount = roommatesRef.current.length;
 
         setRoommates(newRoommates);
         roommatesRef.current = newRoommates;
-
-        // Show notification if new members joined
-        if (showToast && newRoommates.length > previousCount) {
-          const newCount = newRoommates.length - previousCount;
-          toast.success(`${newCount} new roommate${newCount > 1 ? 's' : ''} joined!`);
-        }
       }
     } catch (error) {
       console.error('Failed to load group:', error);
@@ -96,7 +88,7 @@ export default function RoommatesManager() {
 
   const handleRefresh = () => {
     if (currentUserGroup) {
-      loadGroupData(currentUserGroup, true);
+      loadGroupData(currentUserGroup);
     }
   };
 
@@ -131,13 +123,11 @@ export default function RoommatesManager() {
 
   const handleEmailSubmit = () => {
     if (!userEmail.trim()) {
-      toast.error('Please enter your email');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(userEmail.trim())) {
-      toast.error('Please enter a valid email address');
       return;
     }
 
@@ -156,7 +146,6 @@ export default function RoommatesManager() {
     setShowEmailForm(false);
     
     createNewGroup(newCode, userEmail.trim(), userName.trim() || 'You');
-    toast.success('Welcome! Your roommate group is ready.');
   };
 
   const generateShareCode = () => {
@@ -165,7 +154,6 @@ export default function RoommatesManager() {
 
   const handleAddRoommate = async () => {
     if (!newRoommate.name || !newRoommate.email) {
-      toast.error('Name and email are required');
       return;
     }
 
@@ -199,17 +187,14 @@ export default function RoommatesManager() {
     saveRoommates(updated);
     setNewRoommate({ name: '', email: '', phone: '', budget: 0, preferences: '' });
     setShowAddForm(false);
-    toast.success('Roommate added!');
   };
 
   const handleJoinWithCode = async () => {
     if (!joiningCode) {
-      toast.error('Please enter a share code');
       return;
     }
 
     if (!userEmail) {
-      toast.error('Please add your email first');
       setShowEmailForm(true);
       return;
     }
@@ -218,13 +203,11 @@ export default function RoommatesManager() {
     const normalizedCode = joiningCode.trim().toUpperCase().replace(/\s+/g, '');
     
     if (!normalizedCode.startsWith('BRW-')) {
-      toast.error('Invalid code format. Codes should start with "BRW-"');
       return;
     }
 
     // Don't join if it's the same group
     if (normalizedCode === currentUserGroup) {
-      toast('You are already in this group', { icon: 'ℹ️' });
       return;
     }
 
@@ -301,14 +284,11 @@ export default function RoommatesManager() {
           localStorage.setItem('roommate_user', JSON.stringify(userData));
         }
         
-        toast.success(`Joined new group! Found ${groupData.roommates?.length || 0} roommate(s).`);
         return;
       } else {
-        toast.error(`Share code "${normalizedCode}" not found.`);
       }
     } catch (error) {
       console.error('Error joining group:', error);
-      toast.error('Failed to join group. Please try again.');
     }
   };
 
@@ -316,7 +296,6 @@ export default function RoommatesManager() {
     // Prevent user from removing themselves (they should join another group to leave)
     const roommateToRemove = roommates.find(r => r.id === id);
     if (roommateToRemove && roommateToRemove.email === userEmail) {
-      toast.error('To leave this group, join another group using a share code');
       return;
     }
 
@@ -336,7 +315,6 @@ export default function RoommatesManager() {
     }
     
     saveRoommates(updated);
-    toast.success('Roommate removed');
   };
 
   const saveRoommates = (roommateList: Roommate[]) => {
@@ -350,6 +328,10 @@ export default function RoommatesManager() {
   };
 
   const handleShare = async () => {
+    if (!shareCode) {
+      return;
+    }
+
     const shareText = `Join me on BullsRentWise to find the perfect rental!\n\nShare Code: ${shareCode}\n\nUse this code to connect and collaborate!`;
     
     if (navigator.share) {
@@ -358,14 +340,12 @@ export default function RoommatesManager() {
           title: 'BullsRentWise - Roommate Connection',
           text: shareText,
         });
-        toast.success('Shared!');
       } catch (error) {
         // User cancelled or error
       }
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(shareText);
-      toast.success('Share code copied to clipboard!');
     }
   };
 
@@ -502,7 +482,6 @@ export default function RoommatesManager() {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(shareCode);
-                toast.success('Code copied!');
               }}
               className="rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm transition hover:border-blue-300 hover:bg-blue-50"
               title="Copy code"

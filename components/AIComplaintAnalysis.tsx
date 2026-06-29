@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import toast from 'react-hot-toast';
 
 interface Complaint {
   type: string;
@@ -40,7 +39,6 @@ export default function AIComplaintAnalysis({ complaints }: AIComplaintAnalysisP
       });
     } catch (error) {
       console.error('Analysis error:', error);
-      toast.error('Failed to analyze complaint');
     } finally {
       setAnalyzing((prev) => {
         const newSet = new Set(prev);
