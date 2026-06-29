@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const systemPrompt = `You are a helpful assistant for UB students looking for rental properties in Buffalo, NY. 
+      const systemPrompt = `You are a helpful assistant for renters evaluating properties in the United States. 
 You help them understand:
 - Risk scores and what they mean
 - 311 complaints and their implications

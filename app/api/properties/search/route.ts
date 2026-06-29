@@ -16,9 +16,6 @@ interface PropertySearchParams {
   };
 }
 
-// UB North Campus coordinates
-const UB_NORTH_CAMPUS = { lat: 43.0014, lng: -78.7861 };
-
 // Calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 3959; // Earth's radius in miles
@@ -42,33 +39,30 @@ async function searchPropertiesOnline(params: PropertySearchParams): Promise<any
   // 4. Use web scraping (with proper rate limiting and legal compliance)
   // 5. Use Google Places API for rental listings
   
-  // For now, we'll generate realistic sample properties based on preferences
-  // and use geocoding to find addresses in Buffalo near UB
+  // For now, generate realistic nearby sample candidates around the user's selected area.
   
   const properties: any[] = [];
   
-  // Common Buffalo neighborhoods near UB
   const neighborhoods = [
-    'University Heights',
-    'North Campus Area',
-    'South Campus Area',
-    'Elmwood Village',
-    'Allentown',
-    'Hertel Avenue',
-    'Downtown Buffalo',
+    'Downtown',
+    'Midtown',
+    'Uptown',
+    'West Side',
+    'East Side',
+    'Waterfront',
+    'Near Transit',
   ];
 
-  // Generate sample properties based on preferences
-  const sampleAddresses = [
-    { address: '123 Winspear Ave, Buffalo, NY', neighborhood: 'University Heights', baseRent: preferences.preferredRentRange.min + 50 },
-    { address: '456 Main St, Buffalo, NY', neighborhood: 'North Campus Area', baseRent: preferences.preferredRentRange.min + 100 },
-    { address: '789 Elmwood Ave, Buffalo, NY', neighborhood: 'Elmwood Village', baseRent: preferences.preferredRentRange.min + 150 },
-    { address: '321 Hertel Ave, Buffalo, NY', neighborhood: 'Hertel Avenue', baseRent: preferences.preferredRentRange.min + 80 },
-    { address: '654 Delaware Ave, Buffalo, NY', neighborhood: 'Allentown', baseRent: preferences.preferredRentRange.min + 120 },
-    { address: '987 University Ave, Buffalo, NY', neighborhood: 'University Heights', baseRent: preferences.preferredRentRange.min + 60 },
-    { address: '147 Bailey Ave, Buffalo, NY', neighborhood: 'South Campus Area', baseRent: preferences.preferredRentRange.min + 40 },
-    { address: '258 Kenmore Ave, Buffalo, NY', neighborhood: 'North Campus Area', baseRent: preferences.preferredRentRange.min + 90 },
-  ];
+  const sampleAddresses = neighborhoods.map((neighborhood, index) => {
+    const offset = (index + 1) * 0.006;
+    return {
+      address: `Rental option ${index + 1} near ${location.lat.toFixed(3)}, ${location.lng.toFixed(3)}`,
+      neighborhood,
+      baseRent: preferences.preferredRentRange.min + 50 + index * 75,
+      lat: location.lat + (index % 2 === 0 ? offset : -offset),
+      lng: location.lng + (index % 3 === 0 ? offset : -offset),
+    };
+  });
 
   // Filter by preferences
   const filteredAddresses = sampleAddresses.filter(addr => {
@@ -91,32 +85,18 @@ async function searchPropertiesOnline(params: PropertySearchParams): Promise<any
     return true;
   });
 
-  // Geocode and analyze each property
   for (const addr of filteredAddresses.slice(0, 10)) { // Limit to 10 for performance
     try {
-      // Geocode address
-      const geocodeRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr.address)}&limit=1`, {
-        headers: {
-          'User-Agent': 'BullsRentWise/1.0',
-        },
-      });
-
-      if (!geocodeRes.ok) continue;
-
-      const geocodeData = await geocodeRes.json();
-      if (geocodeData.length === 0) continue;
-
-      const { lat, lon } = geocodeData[0];
-      const distance = calculateDistance(parseFloat(lat), parseFloat(lon), UB_NORTH_CAMPUS.lat, UB_NORTH_CAMPUS.lng);
+      const distance = calculateDistance(addr.lat, addr.lng, location.lat, location.lng);
 
       // Check distance
       if (distance > preferences.maxDistanceToUB) continue;
 
       // Fetch risk data for this property location
       const [complaints, weather, crimeData] = await Promise.all([
-        fetchComplaintsForLocation(parseFloat(lat), parseFloat(lon), 800),
-        fetchWeatherForLocation(parseFloat(lat), parseFloat(lon)),
-        fetchCrimeForLocation(parseFloat(lat), parseFloat(lon), 800),
+        fetchComplaintsForLocation(addr.lat, addr.lng, 800),
+        fetchWeatherForLocation(addr.lat, addr.lng),
+        fetchCrimeForLocation(addr.lat, addr.lng, 800),
       ]);
 
 
@@ -162,8 +142,8 @@ async function searchPropertiesOnline(params: PropertySearchParams): Promise<any
 
       properties.push({
         address: addr.address,
-        lat: parseFloat(lat),
-        lng: parseFloat(lon),
+        lat: addr.lat,
+        lng: addr.lng,
         riskScore,
         distance,
         estimatedRent: addr.baseRent,

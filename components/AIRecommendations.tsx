@@ -21,6 +21,25 @@ interface AIRecommendationsProps {
   discoveredProperties?: any[];
 }
 
+const DEFAULT_PREFERENCES = {
+  maxMonthlyBudget: 1200,
+  preferredRentRange: { min: 700, max: 2200 },
+  riskTolerance: 'medium',
+  preferredNeighborhoods: [],
+  maxDistanceToUB: 5,
+  publicTransportRequired: true,
+  mustHaveFeatures: [],
+  niceToHaveFeatures: [],
+  preferredRoommateCount: 1,
+  petFriendly: false,
+  priorities: {
+    budget: 5,
+    safety: 4,
+    location: 4,
+    features: 3,
+  },
+};
+
 export default function AIRecommendations({ savedAddresses, discoveredProperties = [] }: AIRecommendationsProps) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,22 +48,22 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
   const [savedRecommendations, setSavedRecommendations] = useState<Set<string>>(new Set());
 
   const fetchRecommendations = async () => {
-    // Load user preferences
     const preferencesData = localStorage.getItem('userPreferences');
-    if (!preferencesData) {
-      toast.error('Please set your preferences first');
-      return;
-    }
 
     setLoading(true);
     try {
-      const preferences = JSON.parse(preferencesData);
+      const preferences = preferencesData
+        ? { ...DEFAULT_PREFERENCES, ...JSON.parse(preferencesData) }
+        : DEFAULT_PREFERENCES;
       
       // Search for properties online based on preferences
       toast.loading('Searching for properties online...', { id: 'searching' });
       
-      // Use UB North Campus as default location for search
-      const searchLocation = { lat: 43.0014, lng: -78.7861 }; // UB North Campus
+      const anchorAddress = savedAddresses.find((addr) => addr.lat && addr.lng)
+        || discoveredProperties.find((addr) => addr.lat && addr.lng);
+      const searchLocation = anchorAddress
+        ? { lat: anchorAddress.lat, lng: anchorAddress.lng }
+        : { lat: 39.8283, lng: -98.5795 };
       
       const searchRes = await fetch('/api/properties/search', {
         method: 'POST',
@@ -112,6 +131,7 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
           riskScore: addr.riskScore || 0,
           lat: addr.lat,
           lng: addr.lng,
+          distance: addr.distance,
           budget: budget ? {
             estimatedRent: budget.estimatedRent || 0,
             utilities: budget.utilities || 0,
@@ -239,20 +259,23 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
   };
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg shadow-md border border-indigo-100/50 p-3 overflow-hidden hover-lift">
+    <div className="app-card overflow-hidden p-4">
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="icon-tile h-9 w-9 bg-slate-950">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v2a2 2 0 01-2-2v-.469c0-.621-.251-1.217-.688-1.653l-.548-.547z" />
             </svg>
           </div>
-            <h2 className="text-base font-bold text-gray-900 truncate">AI Recommendations</h2>
+          <div className="min-w-0">
+            <p className="section-label">Market</p>
+            <h2 className="truncate text-base font-black text-slate-950">Market Recommendations</h2>
+          </div>
         </div>
         <button
           onClick={fetchRecommendations}
           disabled={loading}
-          className="px-3 lg:px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-xs lg:text-sm font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center gap-2 shrink-0"
+          className="btn-primary shrink-0 px-3 py-2 text-xs lg:text-sm"
         >
           {loading ? (
             <>
@@ -267,25 +290,25 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Get Recommendations
+              Find Matches
             </>
           )}
         </button>
       </div>
 
-      {!loading && (
-        <div className="text-center py-4">
-          <p className="text-gray-600 text-sm font-medium mb-1">🔍 AI Property Search</p>
-          <p className="text-gray-500 text-xs">
-            Click &quot;Get Recommendations&quot; to search online properties matching your preferences
+      {!loading && recommendations.length === 0 && !summary && (
+        <div className="empty-state py-4">
+          <p className="mb-1 text-sm font-bold text-slate-700">Market property search</p>
+          <p className="text-xs text-slate-500">
+            Click &quot;Find Matches&quot; to compare market-style rental options near your selected area.
           </p>
         </div>
       )}
 
         {summary && (
-          <div className="mb-3 p-3 bg-white/80 rounded-lg border border-indigo-200">
-            <h3 className="font-semibold text-gray-900 text-xs mb-2">Summary</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="mb-3 mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <h3 className="mb-2 text-xs font-black text-slate-950">Summary</h3>
+          <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2 md:grid-cols-4">
             <div>
               <div className="text-gray-600">Total Properties</div>
               <div className="font-bold text-gray-900">{summary.totalProperties}</div>
@@ -315,7 +338,7 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
             renderItem={(rec, idx) => (
               <div
                 key={rec.address}
-                className={`bg-white/90 rounded-lg p-2.5 border transition-all shadow-sm hover:shadow-md overflow-hidden hover-lift animate-slideUp mb-3 ${
+                className={`mb-3 overflow-hidden rounded-2xl border bg-white p-3 shadow-sm transition hover:shadow-md animate-slideUp ${
                 rec.suitability === 'excellent' ? 'border-green-300 hover:border-green-500 hover:ring-2 hover:ring-green-200' :
                 rec.suitability === 'good' ? 'border-blue-300 hover:border-blue-500 hover:ring-2 hover:ring-blue-200' :
                 rec.suitability === 'fair' ? 'border-yellow-300 hover:border-yellow-500 hover:ring-2 hover:ring-yellow-200' :
@@ -326,7 +349,7 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
               <div className="flex items-start justify-between gap-2 lg:gap-4">
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex items-center gap-2 lg:gap-3 mb-2 flex-wrap">
-                    <span className="px-2.5 py-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-xs font-bold shadow-sm shrink-0">
+                    <span className="shrink-0 rounded-full bg-slate-950 px-2.5 py-1 text-xs font-bold text-white shadow-sm">
                       #{idx + 1}
                     </span>
                     <h3 className="font-bold text-gray-900 text-sm lg:text-base flex-1 min-w-0 truncate">{rec.address}</h3>
@@ -409,12 +432,12 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
                   )}
 
                   {rec.reasons.length > 0 && showDetails[rec.address] && (
-                    <div className="mt-2 p-3 bg-indigo-50 rounded-lg">
-                      <div className="text-xs font-semibold text-indigo-900 mb-1">Why This Matches:</div>
-                      <ul className="text-xs text-indigo-700 space-y-1">
+                    <div className="mt-2 rounded-2xl bg-slate-50 p-3">
+                      <div className="text-xs font-semibold text-slate-950 mb-1">Why This Matches:</div>
+                      <ul className="text-xs text-slate-700 space-y-1">
                         {rec.reasons.map((reason, i) => (
                           <li key={i} className="flex items-start gap-2">
-                            <span className="text-indigo-500 mt-0.5">•</span>
+                            <span className="text-teal-600 mt-0.5">•</span>
                             <span>{reason}</span>
                           </li>
                         ))}
@@ -424,10 +447,10 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
 
                   {/* Quick Action Buttons */}
                   <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <button
                         onClick={() => toggleDetails(rec.address)}
-                        className="flex-1 px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200"
                       >
                         {showDetails[rec.address] ? 'Hide Details' : 'Show Details'}
                         <svg
@@ -440,10 +463,10 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
                         </svg>
                       </button>
                       <a
-                        href={`https://www.google.com/search?q=${encodeURIComponent(rec.address + ' for rent Buffalo NY')}`}
+                        href={`https://www.google.com/search?q=${encodeURIComponent(rec.address + ' for rent')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg text-xs font-semibold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -451,12 +474,12 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
                         View Rental
                       </a>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                       <a
-                        href={`https://www.zillow.com/homes/${encodeURIComponent(rec.address + ' Buffalo NY')}_rb/`}
+                        href={`https://www.zillow.com/homes/${encodeURIComponent(rec.address)}_rb/`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 min-w-[100px] px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                        className="flex items-center justify-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100"
                       >
                         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
@@ -464,10 +487,10 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
                         Zillow
                       </a>
                       <a
-                        href={`https://www.apartments.com/${encodeURIComponent(rec.address.replace(/,/g, '').replace(/\s+/g, '-').toLowerCase() + '-buffalo-ny')}/`}
+                        href={`https://www.apartments.com/${encodeURIComponent(rec.address.replace(/,/g, '').replace(/\s+/g, '-').toLowerCase())}/`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 min-w-[100px] px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                        className="flex items-center justify-center gap-1.5 rounded-lg bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-700 transition-colors hover:bg-teal-100"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -475,10 +498,10 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
                         Apartments
                       </a>
                       <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rec.address + ' Buffalo NY')}`}
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rec.address)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 min-w-[100px] px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                        className="flex items-center justify-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
                       >
                         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
@@ -498,14 +521,14 @@ export default function AIRecommendations({ savedAddresses, discoveredProperties
       )}
 
         {recommendations.length === 0 && !loading && (savedAddresses.length > 0 || discoveredProperties.length > 0) && (
-          <div className="text-center py-12 animate-fadeIn">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full mb-4">
-              <svg className="w-10 h-10 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="empty-state py-10 animate-fadeIn">
+            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+              <svg className="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v2a2 2 0 01-2-2v-.469c0-.621-.251-1.217-.688-1.653l-.548-.547z" />
               </svg>
             </div>
-            <p className="text-gray-600 text-sm font-medium">Ready for AI recommendations</p>
-            <p className="text-gray-400 text-xs mt-1">Click &quot;Get Recommendations&quot; to analyze all available properties</p>
+            <p className="text-sm font-bold text-slate-700">Ready for AI recommendations</p>
+            <p className="mt-1 text-xs text-slate-500">Click &quot;Get Recommendations&quot; to analyze all available properties</p>
           </div>
         )}
     </div>

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 1: Find place by address/location using Places API Text Search
-    const searchQuery = encodeURIComponent(address + ' Buffalo NY');
+    const searchQuery = encodeURIComponent(address);
     const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${apiKey}`;
     
     const searchResponse = await fetch(searchUrl);

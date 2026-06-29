@@ -29,10 +29,6 @@ const AIChatbot = dynamic(() => import('@/components/AIChatbot'), {
   ssr: false,
 });
 
-const BudgetTracker = dynamic(() => import('@/components/BudgetTracker'), {
-  ssr: false,
-});
-
 const CommuteAnalysis = dynamic(() => import('@/components/CommuteAnalysis'), {
   ssr: false,
 });
@@ -119,7 +115,7 @@ function buildAudioSummary(data: RiskResultsProps['data']): string {
 export default function RiskResults({ data, onSave }: RiskResultsProps) {
   const { address, lat, lng, complaints, weather, crime, riskScore } = data;
   const [isSaved, setIsSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'pest-mold' | 'location' | 'photos' | 'ai' | 'budget'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'pest-mold' | 'location' | 'photos' | 'ai'>('overview');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -267,33 +263,107 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
     return 'High Risk';
   };
 
+  const getRiskSummary = (score: number) => {
+    if (score < 30) return 'This address looks comparatively safer based on the current signals.';
+    if (score < 60) return 'This address has a few items worth checking before you tour or sign.';
+    return 'This address has multiple red flags and deserves a careful walkthrough.';
+  };
+
+  const getRiskTextColor = (score: number) => {
+    if (score < 30) return 'text-emerald-600';
+    if (score < 60) return 'text-amber-600';
+    return 'text-red-600';
+  };
+
+  const renderRiskIcon = (score: number) => {
+    if (score < 30) {
+      return (
+        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M9 12.75 11.25 15 15.75 9M12 3.75 5.25 6.75v5.25c0 4.06 2.74 7.85 6.75 8.94 4.01-1.09 6.75-4.88 6.75-8.94V6.75L12 3.75Z" />
+        </svg>
+      );
+    }
+
+    if (score < 60) {
+      return (
+        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M12 8v5m0 3.5h.01M4.5 19.5h15L12 4.5l-7.5 15Z" />
+        </svg>
+      );
+    }
+
+    return (
+      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.4} d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+      </svg>
+    );
+  };
+
+  const tabs: Array<{ id: typeof activeTab; label: string }> = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'pest-mold', label: 'Mold & Pests' },
+    { id: 'location', label: 'Location' },
+    { id: 'photos', label: 'Photos' },
+    { id: 'ai', label: 'AI Analysis' },
+  ];
+
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-6 lg:p-8 space-y-6 hover-lift animate-scaleIn">
-      {/* Header - Enhanced */}
-      <div className="flex justify-between items-start gap-4 pb-4 border-b border-gray-200">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-950/10 animate-scaleIn">
+      <div className="grid gap-4 border-b border-slate-100 p-3 sm:p-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:p-7">
+        <div className="min-w-0">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="icon-tile h-9 w-9 bg-gradient-to-br from-slate-950 via-blue-950 to-teal-800 sm:h-10 sm:w-10">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
-            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 truncate">{address}</h2>
+            <div className="min-w-0">
+              <p className="section-label">Rental report</p>
+              <h2 className="mt-1 break-words text-lg font-black tracking-tight text-slate-950 sm:text-2xl lg:text-3xl">{address}</h2>
+            </div>
           </div>
-          <div className="flex items-center gap-3 mt-2">
-            <div className={`px-4 py-2 rounded-xl text-white text-sm font-bold shadow-lg ${getRiskColor(riskScore)}`}>
-              {riskScore}/100 - {getRiskLabel(riskScore)}
+          <p className="max-w-2xl text-sm leading-6 text-slate-600">{getRiskSummary(riskScore)}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="stat-pill">{complaints.length} complaints</span>
+            <span className="stat-pill">{crime?.stats.total || 0} crime reports</span>
+            <span className="stat-pill">{weather?.avgHumidity?.toFixed?.(0) || 0}% humidity</span>
+          </div>
+        </div>
+
+        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Risk score</p>
+              <div className="mt-1.5 flex items-end gap-2">
+                <span className={`text-4xl font-black leading-none tracking-tight sm:text-5xl ${getRiskTextColor(riskScore)}`}>{riskScore}</span>
+                <span className="pb-1 text-xs font-black uppercase tracking-[0.16em] text-slate-400">/100</span>
+              </div>
+            </div>
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm sm:h-14 sm:w-14 ${getRiskColor(riskScore)}`}>
+              {renderRiskIcon(riskScore)}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <span className="text-sm font-black text-slate-950">{getRiskLabel(riskScore)}</span>
+              <span className="text-xs font-semibold text-slate-500">{riskScore < 30 ? 'Low concern' : riskScore < 60 ? 'Review before touring' : 'Inspect carefully'}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+              <div className={`h-full rounded-full ${getRiskColor(riskScore)}`} style={{ width: `${riskScore}%` }} />
             </div>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-2">
+      </div>
+
+      <div className="flex flex-col gap-3 border-b border-slate-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4 lg:px-7">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <button
             onClick={handleSave}
             disabled={isSaved}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 shadow-lg ${
+            className={`btn-secondary w-full sm:w-auto ${
               isSaved
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl transform hover:scale-105'
+                ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                : ''
             }`}
           >
             {isSaved ? (
@@ -305,7 +375,6 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <span>⭐</span>
                 Save
               </span>
             )}
@@ -313,12 +382,12 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
           <button
             onClick={handlePlayAudioSummary}
             disabled={audioLoading}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-lg flex items-center gap-2 ${
+            className={`btn-secondary w-full sm:w-auto ${
               audioLoading
-                ? 'bg-gray-200 text-gray-500 cursor-wait'
+                ? 'cursor-wait bg-slate-100 text-slate-400'
                 : isPlaying
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700'
-                  : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600'
+                  ? 'border-teal-200 bg-teal-50 text-teal-700'
+                  : ''
             }`}
             title="Listen to a 30-second risk summary"
           >
@@ -341,148 +410,110 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
           </button>
           <audio ref={audioRef} src={audioUrl ?? undefined} preload="auto" className="hidden" />
         </div>
+        <p className="text-xs font-medium text-slate-500">Explore the report below.</p>
       </div>
 
-      {/* Enhanced Tabs */}
-      <div className="border-b-2 border-gray-200">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-5 py-3 text-sm font-semibold border-b-3 transition-all duration-200 rounded-t-lg ${
-              activeTab === 'overview'
-                ? 'border-blue-600 text-blue-600 bg-blue-50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Overview
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('pest-mold')}
-            className={`px-3 py-3 text-sm font-semibold border-b-3 transition-all duration-200 rounded-t-lg ${
-              activeTab === 'pest-mold'
-                ? 'border-orange-600 text-orange-600 bg-orange-50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center gap-1 whitespace-nowrap">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Molds/Pests
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('location')}
-            className={`px-5 py-3 text-sm font-semibold border-b-3 transition-all duration-200 rounded-t-lg ${
-              activeTab === 'location'
-                ? 'border-cyan-600 text-cyan-600 bg-cyan-50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Location
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('photos')}
-            className={`px-5 py-3 text-sm font-semibold border-b-3 transition-all duration-200 rounded-t-lg ${
-              activeTab === 'photos'
-                ? 'border-pink-600 text-pink-600 bg-pink-50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Photos
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab('ai')}
-            className={`px-3 py-3 text-sm font-semibold border-b-3 transition-all duration-200 rounded-t-lg ${
-              activeTab === 'ai'
-                ? 'border-purple-600 text-purple-600 bg-purple-50'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center gap-1 whitespace-nowrap">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v2a2 2 0 01-2-2v-.469c0-.621-.251-1.217-.688-1.653l-.548-.547z" />
-              </svg>
-              AI Analysis
-            </span>
-          </button>
+      <div className="border-b border-slate-100 px-2 py-3 sm:px-5 lg:px-6">
+        <div className="flex justify-start gap-2 overflow-x-auto rounded-2xl bg-gradient-to-r from-slate-50 via-blue-50 to-teal-50 p-1 sm:justify-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`shrink-0 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition-all sm:px-4 sm:py-2.5 sm:text-sm ${
+                activeTab === tab.id
+                  ? 'bg-white text-slate-950 shadow-sm'
+                  : 'text-slate-500 hover:bg-white/70 hover:text-slate-950'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Tab Content */}
-      <div className="space-y-4">
+      <div className="space-y-4 p-3 sm:space-y-5 sm:p-6 lg:p-7">
         {activeTab === 'overview' && (
           <>
             <RiskBreakdown complaints={complaints} weather={weather} crime={crime} riskScore={riskScore} />
             
-            <div className="h-64 lg:h-80 rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <div className="h-56 overflow-hidden rounded-3xl border border-slate-200 shadow-sm sm:h-64 lg:h-80">
               <Map lat={lat} lng={lng} address={address} complaints={complaints} crimes={crime?.crimes || []} />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-4 border border-red-100 shadow-sm hover:shadow-lg hover-lift transition-all duration-300">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-1.5 bg-red-500 rounded-lg">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                      complaints.length === 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+                    }`}>
+                      {complaints.length === 0 ? (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      )}
+                    </div>
+                    <div>
+                      <p className="section-label">City signals</p>
+                      <h3 className="mt-1 text-lg font-black text-slate-950">311 Complaints</h3>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-gray-900 text-sm">311 Complaints ({complaints.length})</h3>
+                  <span className={`rounded-full px-3 py-1 text-xs font-black ${
+                    complaints.length === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {complaints.length}
+                  </span>
                 </div>
                 <ul className="space-y-2 text-xs">
                   {complaints.length === 0 ? (
-                    <li className="text-gray-500 flex items-center gap-1">
-                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      None found
+                    <li className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="text-sm font-black text-slate-950">No recent complaints found</div>
+                          <p className="mt-1 text-xs leading-5 text-slate-500">No matching 311 complaints were detected near this address in the current dataset.</p>
+                        </div>
+                      </div>
                     </li>
                   ) : (
                     complaints.slice(0, 3).map((complaint, idx) => (
-                      <li key={idx} className="border-l-3 border-red-500 pl-3 py-1 bg-white/50 rounded">
-                        <strong className="text-gray-900">{complaint.type || 'Unknown'}</strong>
-                        <div className="text-gray-600 truncate mt-0.5">{complaint.description || 'No description'}</div>
+                      <li key={idx} className="rounded-2xl border border-red-100 bg-red-50/40 p-3">
+                        <strong className="text-slate-950">{complaint.type || 'Unknown complaint'}</strong>
+                        <div className="mt-1 truncate text-slate-500">{complaint.description || 'No description'}</div>
                       </li>
                     ))
                   )}
                 </ul>
               </div>
 
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-lg hover-lift transition-all duration-300">
+              <div className="app-card-soft p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="p-1.5 bg-purple-500 rounded-lg">
+                  <div className="rounded-xl bg-slate-700 p-2">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
-                  <h3 className="font-bold text-gray-900 text-sm">Crime ({crime?.stats.total || 0})</h3>
+                  <h3 className="text-sm font-black text-slate-950">Crime ({crime?.stats.total || 0})</h3>
                 </div>
                 <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between bg-white/50 rounded p-2">
+                  <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-3">
                     <span className="text-gray-700"><strong className="text-red-600">Violent:</strong></span>
                     <span className="font-semibold text-gray-900">{crime?.stats.violent || 0}</span>
                   </div>
-                  <div className="flex items-center justify-between bg-white/50 rounded p-2">
+                  <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-3">
                     <span className="text-gray-700"><strong className="text-orange-600">Property:</strong></span>
                     <span className="font-semibold text-gray-900">{crime?.stats.property || 0}</span>
                   </div>
-                  <div className="flex items-center justify-between bg-white/50 rounded p-2">
+                  <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-3">
                     <span className="text-gray-700"><strong className="text-yellow-600">Drug:</strong></span>
                     <span className="font-semibold text-gray-900">{crime?.stats.drug || 0}</span>
                   </div>
@@ -544,16 +575,16 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
                   </div>
 
                   {/* Other Pest Card */}
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100 shadow-sm hover:shadow-lg transition-all">
+                  <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-4 border border-teal-100 shadow-sm hover:shadow-lg transition-all">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="p-1.5 bg-purple-500 rounded-lg">
+                      <div className="p-1.5 bg-teal-600 rounded-lg">
                         <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <h3 className="font-bold text-gray-900 text-sm">Other Pests</h3>
                     </div>
-                    <div className="text-2xl font-bold text-purple-600">{pestMoldData.stats?.pest || 0}</div>
+                    <div className="text-2xl font-bold text-teal-700">{pestMoldData.stats?.pest || 0}</div>
                     <div className="text-xs text-gray-600 mt-1">complaints</div>
                   </div>
                 </div>
@@ -569,7 +600,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
                       </h4>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {pestMoldData.mold.slice(0, 10).map((item: any, idx: number) => (
-                          <div key={idx} className="border-l-3 border-red-500 pl-3 py-2 bg-red-50/50 rounded text-xs">
+                          <div key={idx} className="border-l-4 border-red-500 pl-3 py-2 bg-red-50/50 rounded text-xs">
                             <div className="font-semibold text-gray-900">{item.type || 'Mold Issue'}</div>
                             <div className="text-gray-600 mt-1">{item.description || 'No description'}</div>
                             {item.address && <div className="text-gray-500 mt-1 text-xs">{item.address}</div>}
@@ -589,7 +620,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
                       </h4>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {pestMoldData.cockroach.slice(0, 10).map((item: any, idx: number) => (
-                          <div key={idx} className="border-l-3 border-amber-500 pl-3 py-2 bg-amber-50/50 rounded text-xs">
+                          <div key={idx} className="border-l-4 border-amber-500 pl-3 py-2 bg-amber-50/50 rounded text-xs">
                             <div className="font-semibold text-gray-900">{item.type || 'Cockroach Issue'}</div>
                             <div className="text-gray-600 mt-1">{item.description || 'No description'}</div>
                             {item.address && <div className="text-gray-500 mt-1 text-xs">{item.address}</div>}
@@ -609,7 +640,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
                       </h4>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {pestMoldData.rodent.slice(0, 10).map((item: any, idx: number) => (
-                          <div key={idx} className="border-l-3 border-gray-500 pl-3 py-2 bg-gray-50/50 rounded text-xs">
+                          <div key={idx} className="border-l-4 border-gray-500 pl-3 py-2 bg-gray-50/50 rounded text-xs">
                             <div className="font-semibold text-gray-900">{item.type || 'Rodent Issue'}</div>
                             <div className="text-gray-600 mt-1">{item.description || 'No description'}</div>
                             {item.address && <div className="text-gray-500 mt-1 text-xs">{item.address}</div>}
@@ -622,14 +653,14 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
 
                   {/* Other Pest Complaints */}
                   {pestMoldData.pest && pestMoldData.pest.length > 0 && (
-                    <div className="bg-white rounded-xl p-4 border border-purple-100 shadow-sm">
+                    <div className="bg-white rounded-xl p-4 border border-teal-100 shadow-sm">
                       <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                        <span className="text-purple-600">Other Pest Complaints</span>
-                        <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full">{pestMoldData.pest.length}</span>
+                        <span className="text-teal-700">Other Pest Complaints</span>
+                        <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded-full">{pestMoldData.pest.length}</span>
                       </h4>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {pestMoldData.pest.slice(0, 10).map((item: any, idx: number) => (
-                          <div key={idx} className="border-l-3 border-purple-500 pl-3 py-2 bg-purple-50/50 rounded text-xs">
+                          <div key={idx} className="border-l-4 border-teal-600 pl-3 py-2 bg-teal-50/50 rounded text-xs">
                             <div className="font-semibold text-gray-900">{item.type || 'Pest Issue'}</div>
                             <div className="text-gray-600 mt-1">{item.description || 'No description'}</div>
                             {item.address && <div className="text-gray-500 mt-1 text-xs">{item.address}</div>}
@@ -704,6 +735,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
             <PropertyPhotos address={address} lat={lat} lng={lng} />
           </LazyLoad>
         )}
+
       </div>
     </div>
   );

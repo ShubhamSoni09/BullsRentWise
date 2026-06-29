@@ -47,10 +47,10 @@ export default function AIRiskPrediction({
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-xl border border-purple-100 p-6">
+      <div className="app-card-soft p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="icon-tile bg-slate-950">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v2a2 2 0 01-2-2v-.469c0-.621-.251-1.217-.688-1.653l-.548-.547z" />
             </svg>
           </div>
@@ -58,9 +58,9 @@ export default function AIRiskPrediction({
         </div>
         <div className="flex justify-center items-center h-40">
           <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-200 border-t-teal-600"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-purple-600 font-semibold text-sm">Analyzing...</span>
+              <span className="text-teal-700 font-semibold text-sm">Analyzing...</span>
             </div>
           </div>
         </div>
@@ -88,15 +88,15 @@ export default function AIRiskPrediction({
   const predictedColors = getRiskColor(predictedScore);
 
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl shadow-xl border border-purple-100 p-6">
+    <div className="app-card-soft p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="icon-tile bg-slate-950">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v2a2 2 0 01-2-2v-.469c0-.621-.251-1.217-.688-1.653l-.548-.547z" />
             </svg>
           </div>
-          <h3 className="text-base font-bold text-gray-900">AI Risk Prediction</h3>
+          <h3 className="text-base font-black text-slate-950">AI Risk Prediction</h3>
         </div>
         <button
           onClick={() => setShowInfo(!showInfo)}
@@ -110,7 +110,7 @@ export default function AIRiskPrediction({
       </div>
 
       {showInfo && (
-        <div className="mb-4 p-4 bg-white/80 rounded-lg border border-purple-200 animate-fadeIn">
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 animate-fadeIn">
           <h4 className="font-semibold text-gray-900 text-sm mb-2">What is AI Risk Prediction?</h4>
           <p className="text-xs text-gray-700 leading-relaxed">
             Our AI analyzes historical patterns from 311 complaints, crime data, and weather trends to predict 

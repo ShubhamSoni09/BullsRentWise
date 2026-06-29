@@ -56,13 +56,13 @@ const categoryIcons: { [key: string]: string } = {
 };
 
 const categoryColors: { [key: string]: string } = {
-  grocery: 'from-green-50 to-emerald-50 border-green-200',
-  restaurants: 'from-red-50 to-orange-50 border-red-200',
-  cafes: 'from-amber-50 to-yellow-50 border-amber-200',
-  gyms: 'from-purple-50 to-pink-50 border-purple-200',
-  parks: 'from-green-50 to-teal-50 border-green-200',
-  libraries: 'from-blue-50 to-indigo-50 border-blue-200',
-  transit: 'from-blue-50 to-cyan-50 border-blue-200',
+  grocery: 'bg-green-50 border-green-200',
+  restaurants: 'bg-red-50 border-red-200',
+  cafes: 'bg-amber-50 border-amber-200',
+  gyms: 'bg-slate-50 border-slate-200',
+  parks: 'bg-emerald-50 border-emerald-200',
+  libraries: 'bg-blue-50 border-blue-200',
+  transit: 'bg-cyan-50 border-cyan-200',
 };
 
 export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesProps) {
@@ -101,7 +101,7 @@ export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesPr
 
   if (loading) {
     return (
-      <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-4 animate-pulse">
+      <div className="app-card p-4 animate-pulse">
         <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
         <div className="space-y-3">
           <div className="h-4 bg-gray-200 rounded"></div>
@@ -131,7 +131,7 @@ export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesPr
         {amenities.map((amenity, idx) => (
           <div
             key={idx}
-            className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-all"
+            className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-3 transition-all hover:shadow-sm"
           >
             <div className="flex-1 min-w-0">
               <div className="font-medium text-gray-900 text-xs truncate">{amenity.name}</div>
@@ -140,7 +140,7 @@ export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesPr
               <span className="text-xs font-semibold text-gray-600">{amenity.distance.toFixed(2)} mi</span>
             </div>
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(amenity.name + ' Buffalo NY')}`}
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${amenity.name} near ${address}`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="ml-2 p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors shrink-0"
@@ -157,19 +157,19 @@ export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesPr
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-xl border border-white/20 p-4 hover-lift">
+    <div className="app-card p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="icon-tile h-9 w-9 bg-emerald-600">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <h3 className="text-base font-bold text-gray-900">Nearby Amenities</h3>
+          <h3 className="text-base font-black text-slate-950">Nearby Amenities</h3>
         </div>
         {data.summary.total > 0 && (
-          <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-semibold">
+          <span className="stat-pill">
             {data.summary.total} found
           </span>
         )}
@@ -177,7 +177,7 @@ export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesPr
 
       {/* Summary */}
       {data.summary.closest && (
-        <div className="mb-4 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+        <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-3">
           <div className="text-xs text-gray-600 mb-1">Closest Amenity</div>
           <div className="flex items-center justify-between">
             <span className="font-semibold text-gray-900">
@@ -189,11 +189,11 @@ export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesPr
       )}
 
       {/* Category Summary */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {Object.entries(data.summary.byCategory).map(([category, count]) => (
           <div
             key={category}
-            className={`bg-gradient-to-br ${categoryColors[category]} rounded-lg p-2 border cursor-pointer hover:shadow-md transition-all`}
+            className={`cursor-pointer rounded-2xl border p-3 transition-all hover:shadow-sm ${categoryColors[category]}`}
             onClick={() => toggleCategory(category)}
           >
             <div className="flex items-center justify-between">
@@ -211,7 +211,7 @@ export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesPr
 
       {/* Expanded Category Lists */}
       {expandedCategory && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 border-t border-slate-200 pt-4">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
               <span>{categoryIcons[expandedCategory]}</span>
@@ -229,7 +229,7 @@ export default function NearbyAmenities({ lat, lng, address }: NearbyAmenitiesPr
       )}
 
       {data.summary.total === 0 && (
-        <div className="text-center py-8">
+        <div className="empty-state py-8">
           <div className="text-4xl mb-2">📍</div>
           <p className="text-xs text-gray-500">No amenities found within 5 miles</p>
         </div>

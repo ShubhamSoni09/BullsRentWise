@@ -53,7 +53,7 @@ export default function RiskBreakdown({ complaints, weather, crime, riskScore }:
   const factors = [
     { name: 'Heat Complaints', score: heatScore, count: heatComplaints, color: 'bg-orange-500' },
     { name: 'Leak Complaints', score: leakScore, count: leakComplaints, color: 'bg-blue-500' },
-    { name: 'Pest Complaints', score: pestScore, count: pestComplaints, color: 'bg-purple-500' },
+    { name: 'Pest Complaints', score: pestScore, count: pestComplaints, color: 'bg-teal-600' },
     { name: 'High Humidity', score: humidityScore, value: weather.avgHumidity?.toFixed(1) + '%', color: 'bg-yellow-500' },
     { name: 'Precipitation', score: precipScore, value: weather.totalPrecip?.toFixed(2) + '"', color: 'bg-cyan-500' },
     { name: 'Violent Crimes', score: violentCrimeScore, count: crime?.stats.violent, color: 'bg-red-600' },
@@ -66,44 +66,48 @@ export default function RiskBreakdown({ complaints, weather, crime, riskScore }:
 
   if (factors.length === 0) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <p className="text-green-800 text-sm font-medium">
-          ✅ No significant risk factors detected
+      <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-5">
+        <p className="text-sm font-bold text-emerald-800">
+          No significant risk factors detected
         </p>
+        <p className="mt-1 text-sm text-emerald-700">Current complaint, weather, and crime signals are low for this address.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-5 border border-gray-200 shadow-sm">
+    <div className="app-card-soft p-5">
       <div className="flex items-center gap-2 mb-4">
-        <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+        <div className="rounded-xl bg-blue-600 p-2">
           <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         </div>
-        <h3 className="font-bold text-gray-900 text-base">Risk Breakdown</h3>
+        <div>
+          <p className="section-label">Score contributors</p>
+          <h3 className="text-base font-black text-slate-950">Risk Breakdown</h3>
+        </div>
       </div>
       <div className="space-y-3">
         {factors.map((factor, idx) => {
           const percentage = (factor.score / riskScore) * 100;
           return (
-            <div key={idx} className="bg-white/70 rounded-lg p-3 border border-gray-100 hover:shadow-sm transition-shadow">
+            <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
               <div className="flex justify-between items-center text-sm mb-2">
-                <span className="text-gray-800 font-medium">
+                <span className="font-semibold text-slate-800">
                   {factor.name}
                   {factor.count !== undefined && factor.count > 0 && (
-                    <span className="text-gray-500 ml-1 font-normal">({factor.count})</span>
+                    <span className="ml-1 font-normal text-slate-500">({factor.count})</span>
                   )}
                   {factor.value && (
-                    <span className="text-gray-500 ml-1 font-normal">({factor.value})</span>
+                    <span className="ml-1 font-normal text-slate-500">({factor.value})</span>
                   )}
                 </span>
-                <span className="font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">+{factor.score}</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-900">+{factor.score}</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className={`${factor.color} h-2.5 rounded-full transition-all duration-500 ease-out shadow-sm`}
+                  className={`${factor.color} h-2.5 rounded-full transition-all duration-500 ease-out`}
                   style={{ width: `${percentage}%` }}
                 ></div>
               </div>

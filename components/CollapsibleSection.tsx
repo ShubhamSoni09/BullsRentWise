@@ -13,19 +13,19 @@ export default function CollapsibleSection({ title, children, defaultOpen = fals
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-colors"
+        className="flex w-full items-center justify-between bg-slate-50 px-4 py-3 text-left transition-colors hover:bg-slate-100"
       >
         <div className="flex items-center gap-2">
           {icon && <span className="text-lg">{icon}</span>}
-          <span className="font-semibold text-gray-900">{title}</span>
+          <span className="font-bold text-slate-950">{title}</span>
         </div>
-        <span className="text-gray-500">{isOpen ? '▼' : '▶'}</span>
+        <span className="text-sm font-bold text-slate-400">{isOpen ? 'Close' : 'Open'}</span>
       </button>
       {isOpen && (
-        <div className="p-4 bg-white">
+        <div className="border-t border-slate-100 bg-white p-4">
           {children}
         </div>
       )}

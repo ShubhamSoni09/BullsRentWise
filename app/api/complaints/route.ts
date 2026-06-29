@@ -16,6 +16,11 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c; // Distance in meters
 }
 
+function isInBuffaloArea(lat: number, lng: number): boolean {
+  const buffaloCityHall = { lat: 42.8864, lng: -78.8784 };
+  return calculateDistance(lat, lng, buffaloCityHall.lat, buffaloCityHall.lng) <= 35000;
+}
+
 // Filter complaints by keywords (heat, leak, pest, mold, cockroach)
 // OData fields: type, reason, subject
 function matchesComplaintType(complaint: any): boolean {
@@ -86,6 +91,10 @@ export async function POST(request: NextRequest) {
 
     if (!lat || !lng) {
       return NextResponse.json({ error: 'Latitude and longitude are required' }, { status: 400 });
+    }
+
+    if (!isInBuffaloArea(lat, lng)) {
+      return NextResponse.json([]);
     }
 
     // Buffalo Open Data Portal - OData v4 API

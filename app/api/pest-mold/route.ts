@@ -16,6 +16,28 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c; // Distance in meters
 }
 
+function emptyPestMoldResponse(message?: string) {
+  return {
+    mold: [],
+    pest: [],
+    cockroach: [],
+    rodent: [],
+    stats: {
+      total: 0,
+      mold: 0,
+      pest: 0,
+      cockroach: 0,
+      rodent: 0,
+    },
+    message,
+  };
+}
+
+function isInBuffaloArea(lat: number, lng: number): boolean {
+  const buffaloCityHall = { lat: 42.8864, lng: -78.8784 };
+  return calculateDistance(lat, lng, buffaloCityHall.lat, buffaloCityHall.lng) <= 35000;
+}
+
 // Categorize pest/mold complaints
 function categorizeIssue(complaint: any): { type: 'mold' | 'pest' | 'cockroach' | 'rodent' | 'other'; severity: number } {
   const searchFields = [
@@ -87,6 +109,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Latitude and longitude are required' }, { status: 400 });
     }
 
+    if (!isInBuffaloArea(lat, lng)) {
+      return NextResponse.json(emptyPestMoldResponse('Local pest and mold complaint history is currently available only where city 311 datasets are integrated.'));
+    }
+
     // Buffalo Open Data Portal - OData v4 API
     // Dataset ID: whkc-e5vr (311 Service Requests)
     const DATASET_ID = process.env.BUFFALO_311_DATASET_ID || 'whkc-e5vr';
@@ -117,19 +143,7 @@ export async function POST(request: NextRequest) {
       if (!response.ok) {
         const errorText = await response.text();
         console.warn(`Buffalo 311 OData API returned ${response.status}: ${errorText.substring(0, 200)}`);
-        return NextResponse.json({
-          mold: [],
-          pest: [],
-          cockroach: [],
-          rodent: [],
-          stats: {
-            total: 0,
-            mold: 0,
-            pest: 0,
-            cockroach: 0,
-            rodent: 0,
-          },
-        });
+        return NextResponse.json(emptyPestMoldResponse());
       }
 
       const odataResponse = await response.json();
@@ -205,34 +219,12 @@ export async function POST(request: NextRequest) {
       });
     } catch (apiError: any) {
       console.error('Error fetching pest/mold data:', apiError.message);
-      return NextResponse.json({
-        mold: [],
-        pest: [],
-        cockroach: [],
-        rodent: [],
-        stats: {
-          total: 0,
-          mold: 0,
-          pest: 0,
-          cockroach: 0,
-          rodent: 0,
-        },
-      });
+      return NextResponse.json(emptyPestMoldResponse());
     }
   } catch (error: any) {
     console.error('Pest/Mold API error:', error);
     return NextResponse.json({
-      mold: [],
-      pest: [],
-      cockroach: [],
-      rodent: [],
-      stats: {
-        total: 0,
-        mold: 0,
-        pest: 0,
-        cockroach: 0,
-        rodent: 0,
-      },
+      ...emptyPestMoldResponse(),
       error: 'Failed to fetch pest/mold data',
     });
   }

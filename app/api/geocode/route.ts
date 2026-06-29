@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Using Nominatim (OpenStreetMap) geocoding - free, no API key needed
     // For production, consider using Mapbox or Google Maps Geocoding API
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+      `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=us&q=${encodeURIComponent(address)}&limit=1`,
       {
         headers: {
           'User-Agent': 'BullsRentWise/1.0', // Required by Nominatim
@@ -43,8 +43,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Address not found' }, { status: 404 });
     }
 
-    const { lat, lon } = data[0];
-    return NextResponse.json({ lat: parseFloat(lat), lng: parseFloat(lon) });
+    const result = data[0];
+    const { lat, lon } = result;
+    const addressDetails = result.address || {};
+    const city = addressDetails.city || addressDetails.town || addressDetails.village || addressDetails.hamlet || null;
+    const state = addressDetails.state || null;
+
+    if (!city || !state) {
+      return NextResponse.json(
+        { error: 'Please enter a full US address with city and state.' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({
+      lat: parseFloat(lat),
+      lng: parseFloat(lon),
+      city,
+      state,
+      country: addressDetails.country || 'United States',
+      displayName: result.display_name,
+    });
   } catch (error) {
     console.error('Geocoding error:', error);
     return NextResponse.json({ error: 'Geocoding failed' }, { status: 500 });

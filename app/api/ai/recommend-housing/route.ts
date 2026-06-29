@@ -21,6 +21,7 @@ interface PropertyData {
   };
   weather?: any;
   source?: string;
+  distance?: number;
 }
 
 interface UserPreferences {
@@ -53,21 +54,6 @@ interface Recommendation {
   estimatedCost?: number;
   source?: string;
 }
-
-// Calculate distance between two coordinates (Haversine formula)
-function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 3959; // Earth's radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-// UB North Campus coordinates (approximate)
-const UB_NORTH_CAMPUS = { lat: 43.0014, lng: -78.7861 };
 
 // Calculate match score for a property
 function calculateMatchScore(property: PropertyData, preferences: UserPreferences): Recommendation {
@@ -118,15 +104,15 @@ function calculateMatchScore(property: PropertyData, preferences: UserPreference
   }
 
   // Location matching (weighted by location priority)
-  if (property.lat && property.lng) {
-    const distance = calculateDistance(property.lat, property.lng, UB_NORTH_CAMPUS.lat, UB_NORTH_CAMPUS.lng);
+  if (typeof property.distance === 'number') {
+    const distance = property.distance;
     if (distance <= preferences.maxDistanceToUB) {
       const locationScore = (1 - distance / preferences.maxDistanceToUB) * 100;
       matchScore += (locationScore / 100) * 20 * (preferences.priorities.location / 5);
-      strengths.push(`${distance.toFixed(1)} miles from UB - within your range`);
+      strengths.push(`${distance.toFixed(1)} miles from your search area - within your range`);
     } else {
       matchScore -= ((distance - preferences.maxDistanceToUB) / preferences.maxDistanceToUB) * 15 * (preferences.priorities.location / 5);
-      concerns.push(`${distance.toFixed(1)} miles from UB - exceeds your preferred distance`);
+      concerns.push(`${distance.toFixed(1)} miles from your search area - exceeds your preferred distance`);
     }
   }
 
@@ -232,7 +218,7 @@ export async function POST(request: NextRequest) {
             messages: [
               {
                 role: 'system',
-                content: `You are a housing advisor helping a UB student find the best rental property. 
+                content: `You are a housing advisor helping a renter find the best rental property in the United States. 
                 Analyze the properties and provide personalized recommendations based on their preferences.`,
               },
               {
@@ -240,7 +226,7 @@ export async function POST(request: NextRequest) {
                 content: `User Preferences:
 - Budget: $${preferences.maxMonthlyBudget}/month
 - Risk Tolerance: ${preferences.riskTolerance}
-- Max Distance to UB: ${preferences.maxDistanceToUB} miles
+- Max Distance from search area: ${preferences.maxDistanceToUB} miles
 - Must Have Features: ${preferences.mustHaveFeatures.join(', ') || 'None'}
 - Priorities: Budget(${preferences.priorities.budget}/5), Safety(${preferences.priorities.safety}/5), Location(${preferences.priorities.location}/5), Features(${preferences.priorities.features}/5)
 

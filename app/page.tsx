@@ -56,7 +56,11 @@ export default function Home() {
         throw new Error(error.error || 'Failed to geocode address');
       }
 
-      const { lat, lng } = await geocodeRes.json();
+      const { lat, lng, city, state, displayName } = await geocodeRes.json();
+
+      if (!city || !state) {
+        throw new Error('Please enter a full US address with city and state.');
+      }
 
       // Fetch 311 complaints, weather data, and crime data in parallel
       setLoadingStep('Fetching 311 complaints, weather, and crime data...');
@@ -98,6 +102,9 @@ export default function Home() {
         weather,
         crime: crimeData,
         riskScore,
+        city,
+        state,
+        displayName,
       });
 
       // Update saved address with location if it exists
@@ -171,89 +178,81 @@ export default function Home() {
   };
 
   return (
-    <main className={`relative ${riskData ? 'min-h-screen' : 'h-screen overflow-hidden'}`}>
-        {/* Gradient overlay */}
-        <div className="fixed inset-0 z-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" />
-        
-        {/* Decorative background elements */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
-        </div>
+    <main className="relative isolate min-h-screen overflow-x-hidden bg-[#f8fafc]">
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center"
+        style={{ backgroundImage: "url('/images/premium-rental-background.png')" }}
+      />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(90deg,_rgba(2,6,23,0.88)_0%,_rgba(15,23,42,0.68)_52%,_rgba(15,23,42,0.28)_100%)]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(180deg,_rgba(2,6,23,0.04)_0%,_rgba(248,250,252,0.40)_62%,_rgba(248,250,252,0.92)_100%)]" />
 
-        <div className={`relative z-10 max-w-[98%] mx-auto p-2 sm:p-3 lg:p-4 overflow-x-hidden ${riskData ? '' : 'h-full flex flex-col'}`}>
-        {/* Enhanced Header */}
-        <div className={`text-center ${riskData ? 'mb-4 sm:mb-6 lg:mb-8' : 'mb-3 sm:mb-4 lg:mb-6 shrink-0'} animate-fadeIn`}>
-          <div className="inline-block mb-2 sm:mb-3">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 mb-1 sm:mb-2">
-              <span className="inline-block transform hover:scale-105 transition-transform duration-300">
-                🐂
-              </span>{' '}
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                BullsRentWise
-              </span>
-            </h1>
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
+        <nav className="mb-4 flex items-center justify-between text-white sm:mb-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-950 via-blue-950 to-teal-800 text-2xl shadow-lg shadow-slate-950/20">
+              🐂
+            </div>
+            <div>
+              <div className="text-base font-black tracking-tight sm:text-lg">BullsRentWise</div>
+              <div className="text-xs font-medium text-white/70">US rental confidence tool</div>
+            </div>
           </div>
-          <p className="text-sm sm:text-base lg:text-lg text-gray-700 font-medium max-w-2xl mx-auto px-2">
-            UB Student Rental Assistant
-          </p>
-          <p className="text-xs sm:text-sm lg:text-base text-gray-600 mt-1 sm:mt-2 max-w-5xl mx-auto px-2 sm:whitespace-nowrap">
-            Analyze Buffalo rentals: risk scores, commute times, nearby amenities, and AI-powered recommendations
-          </p>
-        </div>
+          <div className="hidden rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-white shadow-sm backdrop-blur sm:block">
+            United States
+          </div>
+        </nav>
 
-        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-0 ${riskData ? '' : 'flex-1 min-h-0 overflow-hidden'}`}>
-          {/* Left Sidebar - Saved Addresses & Roommates */}
-          <div className={`lg:col-span-3 border-r-0 lg:border-r border-gray-300 pr-0 lg:pr-4 xl:pr-6 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
-            <div className={`lg:sticky lg:top-4 space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth px-2 lg:px-0`} style={{ scrollBehavior: 'smooth' }}>
-              <div className="animate-slideIn" style={{ animationDelay: '0.2s' }}>
-                <SavedAddresses 
-                  onAddressSaved={() => {}} 
+        <header className="mb-4 text-white sm:mb-5">
+          <div className="px-1 py-2 sm:p-4 lg:p-6">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur">
+                US rental intelligence
+              </div>
+              <h1 className="max-w-3xl text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+                Find a rental that feels right before move-in day.
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/78 sm:mt-4 sm:text-base">
+                Scan US rental addresses for local data where available, safety signals, mold and weather risk, nearby amenities, photos, budget fit, and roommate collaboration.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2 sm:mt-5">
+                <span className="stat-pill border-white/20 bg-white/[0.12] text-white backdrop-blur">311 complaints</span>
+                <span className="stat-pill border-white/20 bg-white/[0.12] text-white backdrop-blur">Commute + amenities</span>
+                <span className="stat-pill border-amber-300/30 bg-amber-300/[0.12] text-amber-100 backdrop-blur">AI summaries</span>
+              </div>
+            </div>
+
+          </div>
+        </header>
+
+        <div className="grid flex-1 grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+          <section className="min-w-0 space-y-4 sm:space-y-5">
+            <AddressInput onSubmit={handleAddressSubmit} loading={loading} loadingStep={loadingStep} />
+            {!riskData && !loading && <WelcomeSection />}
+            {loading && <SkeletonLoader />}
+            {riskData && !loading && <RiskResults data={riskData} onSave={() => {}} />}
+          </section>
+
+          <aside className="space-y-4 lg:sticky lg:top-6">
+            <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+              <div className="mb-3 rounded-2xl bg-gradient-to-r from-slate-50 via-blue-50 to-teal-50 p-3 sm:mb-4 sm:p-4">
+                <p className="section-label">Workspace</p>
+                <h2 className="mt-1 text-lg font-black text-slate-950">Plan and compare</h2>
+                <p className="mt-1 text-sm text-slate-500">Save options, coordinate roommates, and tune recommendations.</p>
+              </div>
+              <div className="space-y-4 rounded-2xl lg:max-h-[calc(100vh-11rem)] lg:overflow-y-auto lg:pr-1 scroll-smooth">
+                <SavedAddresses
+                  onAddressSaved={() => {}}
                   onAddressesChange={(addresses) => setSavedAddresses(addresses)}
                 />
-              </div>
-              <div className="animate-slideIn" style={{ animationDelay: '0.25s' }}>
                 <RoommatesManager />
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content - Scrollable */}
-          <div className={`lg:col-span-6 space-y-4 lg:space-y-6 border-x-0 lg:border-x border-gray-300 px-2 sm:px-4 lg:px-6 ${riskData ? '' : 'flex flex-col min-h-0 overflow-hidden'}`}>
-            <div className="animate-fadeIn" style={{ animationDelay: '0.1s' }}>
-              <AddressInput onSubmit={handleAddressSubmit} loading={loading} loadingStep={loadingStep} />
-            </div>
-            {!riskData && !loading && (
-              <div className="animate-fadeIn" style={{ animationDelay: '0.15s' }}>
-                <WelcomeSection />
-              </div>
-            )}
-            {loading && (
-              <div className="animate-fadeIn">
-                <SkeletonLoader />
-              </div>
-            )}
-            {riskData && !loading && (
-              <div className="animate-fadeIn">
-                <RiskResults data={riskData} onSave={() => {}} />
-              </div>
-            )}
-          </div>
-          
-          {/* Right Sidebar - Preferences & AI Recommendations */}
-          <div className={`lg:col-span-3 border-l-0 lg:border-l border-gray-300 pl-0 lg:pl-4 xl:pl-6 ${riskData ? '' : 'flex flex-col min-h-0'}`}>
-            <div className={`lg:sticky lg:top-4 space-y-2 max-h-[calc(100vh-2rem)] overflow-y-auto scroll-smooth px-2 lg:px-0`} style={{ scrollBehavior: 'smooth' }}>
-              <div className="animate-slideIn" style={{ animationDelay: '0.3s' }}>
                 <UserPreferences />
-              </div>
-              <div className="animate-slideIn" style={{ animationDelay: '0.35s' }}>
-                <AIRecommendations 
-                  savedAddresses={savedAddresses} 
+                <AIRecommendations
+                  savedAddresses={savedAddresses}
                   discoveredProperties={[]}
                 />
               </div>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
     </main>

@@ -52,15 +52,18 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
   const affordabilityPercentage = monthlyBudget > 0 ? (perPersonCost / monthlyBudget) * 100 : 0;
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-5 lg:p-6 hover-lift">
+    <div className="app-card p-5 lg:p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="icon-tile bg-amber-500">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-lg lg:text-xl font-bold text-gray-900">Budget</h3>
+          <div>
+            <p className="section-label">Affordability</p>
+            <h3 className="text-lg font-black text-slate-950 lg:text-xl">Budget</h3>
+          </div>
         </div>
         {saved && (
           <span className="text-xs text-green-600 font-medium flex items-center gap-1">
@@ -73,12 +76,12 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
               Budget (per person)
             </label>
-            <div className="flex items-center gap-1.5 px-3 py-2.5 border border-gray-300 rounded-xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all bg-white shadow-sm">
+            <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition-all focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
               <span className="text-gray-500 text-sm font-medium">$</span>
               <input
                 type="number"
@@ -94,7 +97,7 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
               Monthly Rent
             </label>
-            <div className="flex items-center gap-1.5 px-3 py-2.5 border border-gray-300 rounded-xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all bg-white shadow-sm">
+            <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition-all focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
               <span className="text-gray-500 text-sm font-medium">$</span>
               <input
                 type="number"
@@ -117,7 +120,7 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
               value={roommateCount || ''}
               onChange={(e) => setRoommateCount(parseInt(e.target.value) || 0)}
               placeholder="0"
-              className="w-full px-3 py-2.5 text-sm font-medium text-gray-900 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white outline-none shadow-sm"
+              className="input-field py-2.5"
             />
           </div>
 
@@ -125,7 +128,7 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
               Utilities
             </label>
-            <div className="flex items-center gap-1.5 px-3 py-2.5 border border-gray-300 rounded-xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200 transition-all bg-white shadow-sm">
+            <div className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm transition-all focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
               <span className="text-gray-500 text-sm font-medium">$</span>
               <input
                 type="number"
@@ -140,7 +143,7 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
 
         <button
           onClick={handleSave}
-          className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+          className="btn-primary w-full"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -149,8 +152,8 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
         </button>
 
         {estimatedRent > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-300 space-y-3">
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-300">
+          <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
+            <div className="app-card-soft p-4">
               <h4 className="font-bold text-gray-900 text-sm mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -182,8 +185,8 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
             </div>
 
             {monthlyBudget > 0 && (
-              <div className={`rounded-xl p-4 border-2 ${
-                isAffordable ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-300'
+              <div className={`rounded-2xl border p-4 ${
+                isAffordable ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
               }`}>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
@@ -195,7 +198,7 @@ export default function BudgetTracker({ address, riskScore, onBudgetUpdate }: Bu
                   <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
                     isAffordable ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
                   }`}>
-                    {isAffordable ? '✓ Affordable' : '⚠️ Over Budget'}
+                    {isAffordable ? 'Affordable' : 'Over Budget'}
                   </span>
                 </div>
                 <div className="space-y-1.5 text-xs">

@@ -74,29 +74,32 @@ export default function SavedAddresses({ onAddressSaved, onAddressesChange }: Sa
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md border border-gray-200/50 p-3 overflow-hidden hover-lift">
+    <div className="app-card overflow-hidden p-4">
       <div className="flex items-center gap-2 mb-3">
-        <div className="p-2 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg">
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="icon-tile h-9 w-9 bg-amber-500">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
           </svg>
         </div>
-        <h2 className="text-base font-bold text-gray-900">Saved Addresses</h2>
+        <div className="min-w-0 flex-1">
+          <p className="section-label">Shortlist</p>
+          <h2 className="text-base font-black text-slate-950">Saved Addresses</h2>
+        </div>
         {savedAddresses.length > 0 && (
-          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+          <span className="stat-pill">
             {savedAddresses.length}
           </span>
         )}
       </div>
         {savedAddresses.length === 0 ? (
-          <div className="text-center py-6 animate-fadeIn">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full mb-2">
-              <svg className="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="empty-state animate-fadeIn">
+            <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50">
+              <svg className="h-6 w-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
               </svg>
             </div>
-            <p className="text-gray-600 text-xs font-medium">No saved addresses</p>
-            <p className="text-gray-400 text-xs mt-0.5">Save to compare</p>
+            <p className="text-sm font-bold text-slate-700">No saved addresses</p>
+            <p className="mt-1 text-xs text-slate-500">Save a report to compare rentals.</p>
           </div>
         ) : (
         <div className="max-h-64 overflow-y-auto scroll-smooth" style={{ scrollBehavior: 'smooth' }}>
@@ -111,15 +114,14 @@ export default function SavedAddresses({ onAddressSaved, onAddressesChange }: Sa
             return (
             <li
               key={addr.id}
-              className="flex justify-between items-start p-2 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200/50 hover:shadow-md hover-lift transition-all duration-300 hover:border-blue-400 gap-2 cursor-pointer"
+              className="flex cursor-pointer items-start justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 transition hover:border-blue-200 hover:bg-white hover:shadow-sm"
             >
                 <div className="flex-1 min-w-0 overflow-hidden">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{addr.address}</p>
+                  <p className="truncate text-sm font-bold text-slate-950">{addr.address}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <div className={`px-2 py-0.5 rounded-lg text-white text-xs font-bold ${getRiskColor(addr.riskScore)}`}>
+                  <div className={`rounded-full px-2 py-0.5 text-xs font-bold text-white ${getRiskColor(addr.riskScore)}`}>
                     {addr.riskScore}/100
                   </div>
-                  <span className="text-xs text-gray-500">•</span>
                   <span className="text-xs text-gray-500">{new Date(addr.date).toLocaleDateString()}</span>
                 </div>
                 {(() => {
@@ -128,7 +130,7 @@ export default function SavedAddresses({ onAddressSaved, onAddressesChange }: Sa
                     const budget = JSON.parse(budgetData);
                     if (budget.estimatedRent > 0) {
                       return (
-                        <div className="mt-2 flex items-center gap-1 text-xs text-blue-600 font-medium flex-wrap">
+                        <div className="mt-2 flex flex-wrap items-center gap-1 text-xs font-semibold text-blue-600">
                           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
@@ -145,7 +147,7 @@ export default function SavedAddresses({ onAddressSaved, onAddressesChange }: Sa
               </div>
               <button
                 onClick={() => handleDelete(addr.id)}
-                className="ml-3 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                className="ml-2 shrink-0 rounded-xl p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
                 title="Delete address"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

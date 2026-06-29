@@ -3,8 +3,8 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: "BullsRentWise - UB Student Rental Risk Checker",
-  description: "Quickly scan Buffalo rental addresses for 311 complaints and weather-related risks",
+  title: "BullsRentWise - US Rental Risk Checker",
+  description: "Quickly scan US rental addresses for local signals, weather-related risks, and affordability context",
 };
 
 export default function RootLayout({

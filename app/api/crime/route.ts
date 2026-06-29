@@ -16,6 +16,11 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c; // Distance in meters
 }
 
+function isInBuffaloArea(lat: number, lng: number): boolean {
+  const buffaloCityHall = { lat: 42.8864, lng: -78.8784 };
+  return calculateDistance(lat, lng, buffaloCityHall.lat, buffaloCityHall.lng) <= 35000;
+}
+
 // Categorize crime by severity
 // OData fields: incident_type_primary, parent_incident_type, incident_description
 function categorizeCrime(crime: any): { category: string; severity: number } {
@@ -245,12 +250,14 @@ export async function POST(request: NextRequest) {
     // Try APIs in order
     let crimeData = null;
 
-    // 1. Try Buffalo Open Data first (now has default dataset ID: d6g9-xbgu)
-    crimeData = await fetchFromBuffaloOpenData(lat, lng, radius);
-
-    // 2. Fallback to CrimeoMeter if Buffalo Open Data fails (requires API key)
-    if (!crimeData && process.env.CRIMEOMETER_API_KEY) {
+    // 1. Try national provider first when configured.
+    if (process.env.CRIMEOMETER_API_KEY) {
       crimeData = await fetchFromCrimeoMeter(lat, lng, radius);
+    }
+
+    // 2. Use Buffalo Open Data only for Buffalo-area addresses.
+    if (!crimeData && isInBuffaloArea(lat, lng)) {
+      crimeData = await fetchFromBuffaloOpenData(lat, lng, radius);
     }
 
     if (crimeData) {
@@ -273,7 +280,7 @@ export async function POST(request: NextRequest) {
         other: 0,
         avgSeverity: 0,
       },
-      error: 'Crime data unavailable - check console for details',
+      error: 'Crime data unavailable for this location. Add CRIMEOMETER_API_KEY for national incident data.',
     });
   } catch (error: any) {
     console.error('Crime API error:', error);

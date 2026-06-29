@@ -13,45 +13,29 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * c;
 }
 
-// Known locations in Buffalo (simplified - in production, use Google Places API or similar)
-const KNOWN_AMENITIES = {
-  grocery: [
-    { name: 'Wegmans', lat: 43.0014, lng: -78.7861 },
-    { name: 'Tops Friendly Markets', lat: 42.9547, lng: -78.8203 },
-    { name: 'Aldi', lat: 42.9800, lng: -78.8000 },
-    { name: 'Target', lat: 43.0100, lng: -78.7900 },
-  ],
-  restaurants: [
-    { name: 'Anchor Bar', lat: 42.9000, lng: -78.8700 },
-    { name: 'Duff\'s Famous Wings', lat: 42.9200, lng: -78.8500 },
-    { name: 'Mighty Taco', lat: 43.0000, lng: -78.7800 },
-    { name: 'Jim\'s Steakout', lat: 42.9500, lng: -78.8300 },
-  ],
-  cafes: [
-    { name: 'Starbucks', lat: 43.0014, lng: -78.7861 },
-    { name: 'Tim Hortons', lat: 42.9547, lng: -78.8203 },
-    { name: 'Spot Coffee', lat: 42.9800, lng: -78.8000 },
-  ],
-  gyms: [
-    { name: 'Planet Fitness', lat: 43.0000, lng: -78.7800 },
-    { name: 'LA Fitness', lat: 42.9500, lng: -78.8300 },
-    { name: 'YMCA', lat: 42.9200, lng: -78.8500 },
-  ],
-  parks: [
-    { name: 'Delaware Park', lat: 42.9300, lng: -78.8600 },
-    { name: 'Cazenovia Park', lat: 42.8500, lng: -78.8200 },
-    { name: 'Riverside Park', lat: 42.9600, lng: -78.9000 },
-  ],
-  libraries: [
-    { name: 'Buffalo Central Library', lat: 42.9000, lng: -78.8700 },
-    { name: 'UB Libraries', lat: 43.0014, lng: -78.7861 },
-  ],
-  transit: [
-    { name: 'Metro Station - University', lat: 43.0014, lng: -78.7861 },
-    { name: 'Metro Station - South Campus', lat: 42.9547, lng: -78.8203 },
-    { name: 'Bus Stop - Main Street', lat: 42.9000, lng: -78.8700 },
-  ],
+const CATEGORY_QUERIES = {
+  grocery: 'node["shop"~"supermarket|grocery"](around:RADIUS,LAT,LNG);way["shop"~"supermarket|grocery"](around:RADIUS,LAT,LNG);',
+  restaurants: 'node["amenity"="restaurant"](around:RADIUS,LAT,LNG);way["amenity"="restaurant"](around:RADIUS,LAT,LNG);',
+  cafes: 'node["amenity"="cafe"](around:RADIUS,LAT,LNG);way["amenity"="cafe"](around:RADIUS,LAT,LNG);',
+  gyms: 'node["leisure"="fitness_centre"](around:RADIUS,LAT,LNG);way["leisure"="fitness_centre"](around:RADIUS,LAT,LNG);',
+  parks: 'node["leisure"="park"](around:RADIUS,LAT,LNG);way["leisure"="park"](around:RADIUS,LAT,LNG);',
+  libraries: 'node["amenity"="library"](around:RADIUS,LAT,LNG);way["amenity"="library"](around:RADIUS,LAT,LNG);',
+  transit: 'node["public_transport"="platform"](around:RADIUS,LAT,LNG);node["highway"="bus_stop"](around:RADIUS,LAT,LNG);node["railway"="station"](around:RADIUS,LAT,LNG);',
 };
+
+type AmenityCategory = keyof typeof CATEGORY_QUERIES;
+
+function elementCoordinates(element: any): { lat: number; lng: number } | null {
+  if (typeof element.lat === 'number' && typeof element.lon === 'number') {
+    return { lat: element.lat, lng: element.lon };
+  }
+
+  if (element.center && typeof element.center.lat === 'number' && typeof element.center.lon === 'number') {
+    return { lat: element.center.lat, lng: element.center.lon };
+  }
+
+  return null;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,27 +45,61 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Latitude and longitude are required' }, { status: 400 });
     }
 
-    // Find nearby amenities within radius
-    const findNearby = (category: keyof typeof KNOWN_AMENITIES) => {
-      return KNOWN_AMENITIES[category]
-        .map(amenity => ({
-          ...amenity,
-          distance: calculateDistance(lat, lng, amenity.lat, amenity.lng),
-        }))
-        .filter(amenity => amenity.distance <= radius)
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 10); // Limit to 10 closest
-    };
+    const radiusMeters = Math.min(radius, 10) * 1609.34;
+    const queryBody = Object.values(CATEGORY_QUERIES)
+      .join('\n')
+      .replaceAll('RADIUS', String(Math.round(radiusMeters)))
+      .replaceAll('LAT', String(lat))
+      .replaceAll('LNG', String(lng));
 
-    const amenities = {
-      grocery: findNearby('grocery'),
-      restaurants: findNearby('restaurants'),
-      cafes: findNearby('cafes'),
-      gyms: findNearby('gyms'),
-      parks: findNearby('parks'),
-      libraries: findNearby('libraries'),
-      transit: findNearby('transit'),
-    };
+    const query = `[out:json][timeout:15];(${queryBody});out center tags 80;`;
+    const response = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ data: query }),
+      signal: AbortSignal.timeout(18000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Overpass API returned ${response.status}`);
+    }
+
+    const overpassData = await response.json();
+    const amenities = Object.keys(CATEGORY_QUERIES).reduce((acc, category) => {
+      acc[category as AmenityCategory] = [];
+      return acc;
+    }, {} as Record<AmenityCategory, Array<{ name: string; lat: number; lng: number; distance: number }>>);
+
+    for (const element of overpassData.elements || []) {
+      const coords = elementCoordinates(element);
+      if (!coords) continue;
+
+      const tags = element.tags || {};
+      const category = Object.keys(CATEGORY_QUERIES).find((key) => {
+        if (key === 'grocery') return /supermarket|grocery/.test(tags.shop || '');
+        if (key === 'restaurants') return tags.amenity === 'restaurant';
+        if (key === 'cafes') return tags.amenity === 'cafe';
+        if (key === 'gyms') return tags.leisure === 'fitness_centre';
+        if (key === 'parks') return tags.leisure === 'park';
+        if (key === 'libraries') return tags.amenity === 'library';
+        if (key === 'transit') return tags.public_transport === 'platform' || tags.highway === 'bus_stop' || tags.railway === 'station';
+        return false;
+      }) as AmenityCategory | undefined;
+
+      if (!category) continue;
+
+      amenities[category].push({
+        name: tags.name || category.charAt(0).toUpperCase() + category.slice(1),
+        lat: coords.lat,
+        lng: coords.lng,
+        distance: calculateDistance(lat, lng, coords.lat, coords.lng),
+      });
+    }
+
+    Object.values(amenities).forEach((items) => {
+      items.sort((a, b) => a.distance - b.distance);
+      items.splice(10);
+    });
 
     // Calculate summary stats
     const totalAmenities = Object.values(amenities).reduce((sum, arr) => sum + arr.length, 0);
