@@ -1,13 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#020617"/>
-      <stop offset="0.62" stop-color="#0f172a"/>
-      <stop offset="1" stop-color="#0f766e"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
-  <path d="M17 31.5 32 19l15 12.5" fill="none" stroke="#f8fafc" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M21.5 30.5V46h21V30.5" fill="none" stroke="#f8fafc" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M17 52h30" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="bg" x1="8" x2="56" y1="8" y2="56" gradientUnits="userSpaceOnUse"><stop stop-color="#020617"/><stop offset=".62" stop-color="#0f172a"/><stop offset="1" stop-color="#0f766e"/></linearGradient></defs><rect width="64" height="64" fill="url(#bg)" rx="16"/><path fill="none" stroke="#f8fafc" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.4" d="M17 31.5 32 19l15 12.5"/><path fill="none" stroke="#f8fafc" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.4" d="M21.5 30.5V46h21V30.5"/><path stroke="#14b8a6" stroke-linecap="round" stroke-width="4" d="M17 52h30"/></svg>
