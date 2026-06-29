@@ -186,7 +186,7 @@ export default function Home() {
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(90deg,_rgba(2,6,23,0.88)_0%,_rgba(15,23,42,0.68)_52%,_rgba(15,23,42,0.28)_100%)]" />
       <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(180deg,_rgba(2,6,23,0.04)_0%,_rgba(248,250,252,0.40)_62%,_rgba(248,250,252,0.92)_100%)]" />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-3 sm:px-6 sm:py-6 lg:px-8">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 pb-10 pt-8 sm:px-6 sm:py-6 lg:px-8">
         <nav className="mb-4 flex items-center justify-between text-white sm:mb-5">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-950 via-blue-950 to-teal-800 text-2xl shadow-lg shadow-slate-950/20">
@@ -212,7 +212,7 @@ export default function Home() {
                 Find a rental that feels right before move-in day.
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/78 sm:mt-4 sm:text-base">
-                Scan US rental addresses for local data where available, safety signals, mold and weather risk, nearby amenities, photos, budget fit, and roommate collaboration.
+                Scan US rental addresses for risk, safety, affordability, and roommate-ready insights.
               </p>
               <div className="mt-4 flex flex-wrap gap-2 sm:mt-5">
                 <span className="stat-pill border-white/20 bg-white/[0.12] text-white backdrop-blur">311 complaints</span>
@@ -228,8 +228,16 @@ export default function Home() {
           <section className="min-w-0 space-y-4 sm:space-y-5">
             <AddressInput onSubmit={handleAddressSubmit} loading={loading} loadingStep={loadingStep} />
             {!riskData && !loading && <WelcomeSection />}
-            {loading && <SkeletonLoader />}
-            {riskData && !loading && <RiskResults data={riskData} onSave={() => {}} />}
+            {loading && (
+              <div className="animate-reportReveal">
+                <SkeletonLoader />
+              </div>
+            )}
+            {riskData && !loading && (
+              <div className="animate-reportReveal">
+                <RiskResults data={riskData} onSave={() => {}} />
+              </div>
+            )}
           </section>
 
           <aside className="space-y-4 lg:sticky lg:top-6">

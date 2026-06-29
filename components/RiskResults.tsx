@@ -308,7 +308,7 @@ export default function RiskResults({ data, onSave }: RiskResultsProps) {
   ];
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-950/10 animate-scaleIn">
+    <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-950/10">
       <div className="grid gap-4 border-b border-slate-100 p-3 sm:p-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:p-7">
         <div className="min-w-0">
           <div className="mb-3 flex items-start gap-3">

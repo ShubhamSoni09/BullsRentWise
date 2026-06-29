@@ -113,32 +113,32 @@ export default function UserPreferences({ onPreferencesChange }: UserPreferences
 
   return (
     <div className="app-card max-w-full overflow-hidden p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="icon-tile h-9 w-9 bg-slate-950">
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <div>
-            <p className="section-label">Personalize</p>
-            <h2 className="text-base font-black text-slate-950">My Preferences</h2>
-          </div>
+      <div className="mb-4 flex items-start gap-3">
+        <div className="icon-tile h-10 w-10 bg-slate-950">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
         </div>
-        <div className="flex items-center gap-2">
-          {saved && (
-            <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Saved
-            </span>
-          )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="section-label">Personalize</p>
+              <h2 className="text-base font-black text-slate-950">My Preferences</h2>
+            </div>
+            {saved && (
+              <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Saved
+              </span>
+            )}
+          </div>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="btn-secondary px-3 py-1.5 text-xs"
+            className="mt-4 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:border-teal-200 hover:bg-teal-50 hover:text-slate-950"
           >
-            {isOpen ? 'Close' : 'Edit'}
+            {isOpen ? 'Close Preferences' : 'Edit Preferences'}
           </button>
         </div>
       </div>
